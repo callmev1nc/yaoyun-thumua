@@ -81,4 +81,4 @@ The service role bypasses RLS and overrides the `'staff'` set by the trigger. Th
 ## Out of scope / future
 
 - Disabling email signup in the Supabase Dashboard (defense-in-depth) — tracked separately in security notes.
-- Rotating the shared test admin password `Yaoyun@2026` — operational item, flagged separately.
+- Rotating the shared test admin password (do not hardcode in docs) — operational item, flagged separately.
