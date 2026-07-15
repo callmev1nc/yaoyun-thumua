@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { installmentAmount } from "@/lib/calc";
+import { createOrderSchema } from "@/lib/validation";
 import type { OrderStatus } from "@/types/db";
 
 export interface OrderItemInput {
@@ -46,20 +47,26 @@ async function nextOrderCode(
   supabase: Awaited<ReturnType<typeof createClient>>,
   year: number,
 ): Promise<string> {
+  const prefix = `YY${year}`;
   const { data } = await supabase
     .from("purchase_orders")
     .select("order_code")
-    .like("order_code", `YY${year}%`);
+    .like("order_code", `${prefix}%`);
 
   let max = 0;
   for (const r of data ?? []) {
-    const m = r.order_code.match(/(\d+)$/);
-    if (m) max = Math.max(max, parseInt(m[1], 10));
+    // Strip the "YY{year}" prefix and parse ONLY the trailing sequence number.
+    // Otherwise "YY202600001" would parse as 202600001 (year included) and the
+    // next code would come out as "YY2026202600002" instead of "YY202600002".
+    const seq = parseInt((r.order_code ?? "").slice(prefix.length), 10);
+    if (!Number.isNaN(seq)) max = Math.max(max, seq);
   }
-  return `YY${year}${String(max + 1).padStart(5, "0")}`;
+  return `${prefix}${String(max + 1).padStart(5, "0")}`;
 }
 
 export async function createOrder(input: CreateOrderInput) {
+  const parsed = createOrderSchema.safeParse(input);
+  if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
   const ctx = await getCurrentUser();
   if (!ctx) return { error: "Chưa đăng nhập" };
   if (!input.items.length) return { error: "Phải có ít nhất 1 dòng sản phẩm" };
@@ -153,4 +160,110 @@ export async function deleteOrder(id: string) {
   if (error) return { error: error.message };
   revalidatePath("/purchase-orders");
   redirect("/purchase-orders");
+}
+
+export async function duplicateOrder(id: string) {
+  const ctx = await getCurrentUser();
+  if (!ctx) return { error: "Chưa đăng nhập" };
+  const supabase = await createClient();
+
+  const { data: orig } = await supabase
+    .from("purchase_orders")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (!orig) return { error: "Không tìm thấy đơn hàng" };
+
+  const { data: origItems } = await supabase
+    .from("order_items")
+    .select("*")
+    .eq("order_id", id)
+    .order("seq");
+  const items = (origItems ?? []) as Array<{
+    product_name: string; unit: string | null; quantity: number;
+    unit_price: number; vat_rate: number; discount_percent: number;
+  }>;
+
+  const { data: origPayments } = await supabase
+    .from("payment_schedules")
+    .select("*")
+    .eq("order_id", id)
+    .order("installment_no");
+  const payments = (origPayments ?? []) as Array<{
+    percent: number; planned_date: string | null;
+  }>;
+
+  const year = new Date().getFullYear();
+  const order_code = await nextOrderCode(supabase, year);
+
+  const { data: order, error: orderErr } = await supabase
+    .from("purchase_orders")
+    .insert({
+      order_code,
+      supplier_id: orig.supplier_id,
+      supplier_company: orig.supplier_company,
+      supplier_contact: orig.supplier_contact,
+      supplier_phone: orig.supplier_phone,
+      buyer_name: orig.buyer_name,
+      buyer_phone: orig.buyer_phone,
+      receiver_name: orig.receiver_name,
+      receiver_phone: orig.receiver_phone,
+      receiver_address: orig.receiver_address,
+      customer_id: orig.customer_id,
+      delivery_date: orig.delivery_date,
+      note: orig.note,
+      status: "draft",
+      created_by: ctx.user.id,
+    })
+    .select("id")
+    .single();
+  if (orderErr) return { error: orderErr.message };
+
+  const { error: itemsErr } = await supabase.from("order_items").insert(
+    items.map((it, i) => ({
+      order_id: order.id,
+      seq: i + 1,
+      product_name: it.product_name,
+      unit: it.unit,
+      quantity: it.quantity,
+      unit_price: it.unit_price,
+      vat_rate: it.vat_rate,
+      discount_percent: it.discount_percent,
+    })),
+  );
+  if (itemsErr) {
+    await supabase.from("purchase_orders").delete().eq("id", order.id);
+    return { error: itemsErr.message };
+  }
+
+  const { data: fresh } = await supabase
+    .from("purchase_orders")
+    .select("grand_total")
+    .eq("id", order.id)
+    .single();
+  if (!fresh) {
+    return { error: "Lỗi tính tổng đơn, vui lòng thử lại" };
+  }
+
+  if (payments.length) {
+    const { error: payErr } = await supabase.from("payment_schedules").insert(
+      payments.map((p, i) => ({
+        order_id: order.id,
+        installment_no: i + 1,
+        percent: p.percent,
+        planned_date: p.planned_date || null,
+        status: "unpaid",
+        paid_date: null,
+        amount: installmentAmount(fresh.grand_total, p.percent),
+      })),
+    );
+    if (payErr) {
+      await supabase.from("order_items").delete().eq("order_id", order.id);
+      await supabase.from("purchase_orders").delete().eq("id", order.id);
+      return { error: payErr.message };
+    }
+  }
+
+  revalidatePath("/purchase-orders");
+  redirect(`/purchase-orders/${order.id}`);
 }

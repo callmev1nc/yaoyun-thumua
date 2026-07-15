@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ClipboardList, Truck, Calculator, Building2, Users, LayoutDashboard, LogOut, Boxes, Menu, X, Package } from "lucide-react";
+import { ClipboardList, Truck, Calculator, Building2, Users, LayoutDashboard, LogOut, Boxes, Menu, X } from "lucide-react";
 import { signOut } from "@/app/actions";
 import { NavLink } from "@/components/nav-link";
 import { Badge } from "@/components/ui/badge";
@@ -58,9 +58,7 @@ export function Sidebar({
     <>
       {/* Brand header */}
       <div className="flex items-center gap-3 px-4 py-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-600 text-primary-foreground shadow-sm">
-          <Package className="h-5 w-5" />
-        </div>
+        <img src="/logo.png" alt="Yaoyun" className="h-8 w-auto" />
         <div className="leading-tight">
           <p className="text-sm font-semibold">Yaoyun</p>
           <p className="text-xs text-muted-foreground">Thu mua</p>

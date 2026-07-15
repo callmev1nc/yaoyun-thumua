@@ -2,15 +2,18 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2, Loader2 } from "lucide-react";
-import type { Supplier, Customer, OrderStatus } from "@/types/db";
+import { ArrowLeft, Plus, Trash2, Loader2, Bookmark, BookmarkCheck } from "lucide-react";
+import type { Supplier, Customer, Product, Buyer, OrderStatus } from "@/types/db";
 import {
   createOrder,
   type OrderItemInput,
   type PaymentInput,
 } from "@/lib/actions/orders";
+import { createSupplier } from "@/lib/actions/suppliers";
+import { createCustomer, updateCustomer } from "@/lib/actions/customers";
+import { createProduct } from "@/lib/actions/products";
+import { createBuyer } from "@/lib/actions/buyers";
 import {
   orderTotals,
   installmentAmount,
@@ -60,24 +63,35 @@ const newKey = () => `l${++keySeq}`;
 export function PurchaseOrderForm({
   suppliers,
   customers,
+  buyers,
+  products,
+  currentUserName,
 }: {
   suppliers: Supplier[];
   customers: Customer[];
+  buyers: Buyer[];
+  products: Product[];
+  currentUserName: string;
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [tickPending, startTick] = useTransition();
 
   const [supplierId, setSupplierId] = useState<string>("");
   const [supplierCompany, setSupplierCompany] = useState("");
   const [supplierContact, setSupplierContact] = useState("");
   const [supplierPhone, setSupplierPhone] = useState("");
 
-  const [buyerName, setBuyerName] = useState("");
+  const [buyerName, setBuyerName] = useState(currentUserName);
   const [buyerPhone, setBuyerPhone] = useState("");
+  const [buyerId, setBuyerId] = useState<string>("");
+
   const [receiverName, setReceiverName] = useState("");
   const [receiverPhone, setReceiverPhone] = useState("");
   const [receiverAddress, setReceiverAddress] = useState("");
   const [customerId, setCustomerId] = useState<string>("");
+  const [customerCompany, setCustomerCompany] = useState("");
+  const [customerSaved, setCustomerSaved] = useState(false);
+
   const [deliveryDate, setDeliveryDate] = useState("");
   const [status, setStatus] = useState<OrderStatus>("confirmed");
   const [note, setNote] = useState("");
@@ -118,6 +132,19 @@ export function PurchaseOrderForm({
     [payments],
   );
 
+  // ---- derived save-state checks ----
+  const isSupplierSaved = supplierCompany.trim()
+    ? suppliers.some((s) => s.company_name.trim().toLowerCase() === supplierCompany.trim().toLowerCase())
+    : false;
+
+  const isBuyerSaved = buyerName.trim()
+    ? buyers.some((b) => b.name.trim().toLowerCase() === buyerName.trim().toLowerCase())
+    : false;
+
+  const isCustomerSaved = (customerCompany.trim() || receiverName.trim())
+    ? customers.some((c) => c.company_name.trim().toLowerCase() === (customerCompany || receiverName).trim().toLowerCase())
+    : false;
+
   // ---- line helpers ----
   function updateLine(key: string, patch: Partial<LineRow>) {
     setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
@@ -140,6 +167,18 @@ export function PurchaseOrderForm({
     setLines((prev) => (prev.length === 1 ? prev : prev.filter((l) => l.key !== key)));
   }
 
+  function handleProductNameChange(key: string, value: string) {
+    updateLine(key, { product_name: value });
+    const match = products.find((p) => p.name.trim().toLowerCase() === value.trim().toLowerCase());
+    if (match) {
+      updateLine(key, {
+        unit: match.default_unit ?? "",
+        unit_price: String(match.default_price),
+        vat_rate: match.default_vat_rate,
+      });
+    }
+  }
+
   function pickSupplier(id: string) {
     setSupplierId(id);
     const s = suppliers.find((x) => x.id === id);
@@ -149,10 +188,94 @@ export function PurchaseOrderForm({
       setSupplierPhone(s.phone ?? "");
     }
   }
+
+  function pickBuyer(id: string) {
+    setBuyerId(id);
+    const b = buyers.find((x) => x.id === id);
+    if (b) {
+      setBuyerName(b.name);
+      setBuyerPhone(b.phone ?? "");
+    }
+  }
+
   function pickCustomer(id: string) {
     setCustomerId(id);
     const c = customers.find((x) => x.id === id);
-    if (c && !receiverAddress) setReceiverAddress(c.address ?? "");
+    if (c) {
+      setReceiverName(c.contact_name ?? "");
+      setReceiverPhone(c.phone ?? "");
+      setReceiverAddress(c.address ?? "");
+      setCustomerCompany(c.company_name);
+      setCustomerSaved(true);
+    }
+  }
+
+  // ---- tick handlers ----
+  function handleSaveSupplier() {
+    startTick(async () => {
+      const res = await createSupplier({
+        company_name: supplierCompany,
+        contact_person: supplierContact,
+        phone: supplierPhone,
+      });
+      if (res?.error) { toast.error(res.error); return; }
+      setSupplierId(res.id);
+      toast.success("Đã lưu NCC vào danh bạ");
+    });
+  }
+
+  function handleSaveBuyer() {
+    startTick(async () => {
+      const res = await createBuyer({ name: buyerName, phone: buyerPhone });
+      if (res?.error) { toast.error(res.error); return; }
+      setBuyerId(res.id);
+      toast.success("Đã lưu người mua vào danh bạ");
+    });
+  }
+
+  function handleSaveCustomer() {
+    startTick(async () => {
+      const payload = {
+        company_name: customerCompany || receiverName,
+        contact_name: receiverName,
+        phone: receiverPhone,
+        address: receiverAddress,
+      };
+      // If a customer is already linked, update it; otherwise create a new one.
+      // (Prevents duplicate customer rows on re-save after pick/edit.)
+      if (customerId) {
+        const res = await updateCustomer(customerId, payload);
+        if (res?.error) { toast.error(res.error); return; }
+        setCustomerSaved(true);
+        toast.success("Đã cập nhật thông tin nhận");
+        return;
+      }
+      const res = await createCustomer(payload);
+      if (res?.error) { toast.error(res.error); return; }
+      setCustomerId(res.id);
+      setCustomerSaved(true);
+      toast.success("Đã lưu thông tin nhận vào danh bạ");
+    });
+  }
+
+  function handleSaveProduct(idx: number) {
+    const l = lines[idx];
+    if (!l.product_name.trim()) return;
+    startTick(async () => {
+      const res = await createProduct({
+        name: l.product_name,
+        default_unit: l.unit,
+        default_price: parseLooseNumber(l.unit_price) || 0,
+        default_vat_rate: l.vat_rate,
+      });
+      if (res?.error) { toast.error(res.error); return; }
+      toast.success("Đã lưu sản phẩm vào danh mục");
+    });
+  }
+
+  function isProductSaved(name: string): boolean {
+    if (!name.trim()) return false;
+    return products.some((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase());
   }
 
   function submit(e: React.FormEvent) {
@@ -252,16 +375,61 @@ export function PurchaseOrderForm({
                 </SelectContent>
               </Select>
             </div>
-            <Field label="Tên công ty NCC" value={supplierCompany} onChange={setSupplierCompany} />
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-1.5">
+                <Label>Tên công ty NCC</Label>
+                <Input value={supplierCompany} onChange={(e) => setSupplierCompany(e.target.value)} />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={tickPending || !supplierCompany.trim() || isSupplierSaved}
+                onClick={handleSaveSupplier}
+                title="Lưu NCC vào danh bạ"
+              >
+                {isSupplierSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
+              </Button>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Người phụ trách NCC" value={supplierContact} onChange={setSupplierContact} />
               <Field label="SĐT NCC" value={supplierPhone} onChange={setSupplierPhone} />
             </div>
             <Separator />
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Người mua hàng" value={buyerName} onChange={setBuyerName} />
-              <Field label="SĐT người mua" value={buyerPhone} onChange={setBuyerPhone} />
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-1.5">
+                <Label>Chọn người mua từ danh bạ</Label>
+                <Select value={buyerId} onValueChange={pickBuyer}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="(nhập tay)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {buyers.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-1.5">
+                <Label>Người mua hàng</Label>
+                <Input value={buyerName} onChange={(e) => setBuyerName(e.target.value)} />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={tickPending || !buyerName.trim() || isBuyerSaved}
+                onClick={handleSaveBuyer}
+                title="Lưu người mua vào danh bạ"
+              >
+                {isBuyerSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
+              </Button>
+            </div>
+              <Field label="SĐT người mua" value={buyerPhone} onChange={setBuyerPhone} />
           </CardContent>
         </Card>
 
@@ -286,12 +454,33 @@ export function PurchaseOrderForm({
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Người nhận hàng" value={receiverName} onChange={setReceiverName} />
-              <Field label="SĐT người nhận" value={receiverPhone} onChange={setReceiverPhone} />
+              <div className="flex items-end gap-2">
+                <div className="flex-1 space-y-1.5">
+                  <Label>Người nhận hàng</Label>
+                  <Input value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setCustomerSaved(false); }} />
+                </div>
+              </div>
+              <Field label="SĐT người nhận" value={receiverPhone} onChange={(v) => { setReceiverPhone(v); setCustomerSaved(false); }} />
             </div>
             <div className="space-y-1.5">
               <Label>Địa chỉ nhận hàng</Label>
-              <Input value={receiverAddress} onChange={(e) => setReceiverAddress(e.target.value)} />
+              <Input value={receiverAddress} onChange={(e) => { setReceiverAddress(e.target.value); setCustomerSaved(false); }} />
+            </div>
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-1.5">
+                <Label>Khách hàng (công ty)</Label>
+                <Input value={customerCompany} onChange={(e) => { setCustomerCompany(e.target.value); setCustomerSaved(false); }} placeholder="Tên công ty khách hàng" />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={tickPending || customerSaved || isCustomerSaved || (!receiverName.trim() && !customerCompany.trim())}
+                onClick={handleSaveCustomer}
+                title="Lưu thông tin nhận vào danh bạ"
+              >
+                {customerSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
+              </Button>
             </div>
             <Separator />
             <div className="grid grid-cols-2 gap-3">
@@ -327,6 +516,11 @@ export function PurchaseOrderForm({
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="overflow-x-auto">
+            <datalist id="product-suggestions">
+              {products.map((p) => (
+                <option key={p.id} value={p.name} />
+              ))}
+            </datalist>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground">
@@ -340,7 +534,7 @@ export function PurchaseOrderForm({
                   <th className="w-32 pb-2 pr-2 text-right">T.TIỀN CHƯA VAT</th>
                   <th className="w-28 pb-2 pr-2 text-right">Tiền VAT</th>
                   <th className="w-32 pb-2 text-right">Tổng dòng</th>
-                  <th className="w-10" />
+                  <th className="w-20" />
                 </tr>
               </thead>
               <tbody>
@@ -351,13 +545,15 @@ export function PurchaseOrderForm({
                     vat_rate: l.vat_rate,
                     discount_percent: parseLooseNumber(l.discount_percent) || 0,
                   };
+                  const saved = isProductSaved(l.product_name);
                   return (
                     <tr key={l.key} className="align-top">
                       <td className="pb-2 pt-1 text-muted-foreground">{idx + 1}</td>
                       <td className="pb-2 pr-2">
                         <Input
+                          list="product-suggestions"
                           value={l.product_name}
-                          onChange={(e) => updateLine(l.key, { product_name: e.target.value })}
+                          onChange={(e) => handleProductNameChange(l.key, e.target.value)}
                           placeholder="Tên / diễn giải sản phẩm"
                         />
                       </td>
@@ -417,15 +613,27 @@ export function PurchaseOrderForm({
                         {formatNumber(lineTotal(parsed))}
                       </td>
                       <td className="pb-2 pl-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeLine(l.key)}
-                          disabled={lines.length === 1}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-0.5">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            disabled={tickPending || !l.product_name.trim() || saved}
+                            onClick={() => handleSaveProduct(idx)}
+                            title="Lưu sản phẩm vào danh mục"
+                          >
+                            {saved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeLine(l.key)}
+                            disabled={lines.length === 1}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );

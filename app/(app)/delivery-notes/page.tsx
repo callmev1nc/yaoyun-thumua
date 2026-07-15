@@ -33,8 +33,9 @@ export default async function DeliveryNotesPage({
 
   let query = supabase
     .from("delivery_notes")
-    .select("*, purchase_orders!inner(order_code, supplier_company)")
-    .order("created_at", { ascending: false });
+    .select("id, delivery_code, receiver_name, delivery_date, status, created_at, purchase_orders!inner(order_code, supplier_company)")
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (q) {
     query = query.or(

@@ -6,8 +6,9 @@ export default async function SuppliersPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("suppliers")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("id, company_name, contact_person, phone")
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   return (
     <div className="space-y-6">

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Package } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -48,9 +48,7 @@ export default function LoginPage() {
       {/* Left brand panel */}
       <div className="hidden flex-1 flex-col justify-between bg-gradient-to-br from-primary to-blue-700 p-12 text-primary-foreground lg:flex">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
-            <Package className="h-6 w-6" />
-          </div>
+          <img src="/logo.png" alt="Yaoyun" className="h-10 w-auto" />
           <span className="text-lg font-semibold">Yaoyun Thu Mua</span>
         </div>
         <div className="space-y-2">
@@ -67,9 +65,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm space-y-6">
           {/* Mobile header */}
           <div className="flex flex-col items-center gap-2 lg:hidden">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-              <Package className="h-7 w-7 text-primary-foreground" />
-            </div>
+            <img src="/logo.png" alt="Yaoyun" className="h-12 w-auto" />
             <h1 className="text-xl font-semibold">Yaoyun Thu Mua</h1>
             <p className="text-sm text-muted-foreground">Đăng nhập để tiếp tục</p>
           </div>

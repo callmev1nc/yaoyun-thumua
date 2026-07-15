@@ -21,8 +21,6 @@ import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
-export const dynamic = "force-dynamic";
-
 export default async function LedgerPage({
   searchParams,
 }: {
@@ -51,21 +49,22 @@ export default async function LedgerPage({
   if (companyFilter) query = query.ilike("company", `%${companyFilter}%`);
   if (orderFilter) query = query.ilike("order_code", `%${orderFilter}%`);
 
-  const { data } = await query;
-  const rows = (data as LedgerRow[]) ?? [];
+  const [dataRes, companiesRes] = await Promise.all([
+    query,
+    supabase
+      .from("ledger")
+      .select("company")
+      .not("company", "is", null)
+      .order("company"),
+  ]);
+  const rows = (dataRes.data as LedgerRow[]) ?? [];
 
   const sumGross = rows.reduce((s, r) => s + Number(r.line_gross), 0);
   const sumDiscount = rows.reduce((s, r) => s + Number(r.discount_amount), 0);
   const sumNet = rows.reduce((s, r) => s + Number(r.net_before_vat), 0);
   const totalItems = rows.length;
 
-  // Build a unique set of company names for filter suggestions
-  const { data: allLedger } = await supabase
-    .from("ledger")
-    .select("company")
-    .not("company", "is", null)
-    .order("company");
-  const companies = Array.from(new Set((allLedger ?? []).map((r: { company: string | null }) => r.company).filter(Boolean)));
+  const companies = Array.from(new Set((companiesRes.data ?? []).map((r: { company: string | null }) => r.company).filter(Boolean)));
 
   // CSV export URL — we use a plain link that triggers a download via API route.
   const csvParams = new URLSearchParams();

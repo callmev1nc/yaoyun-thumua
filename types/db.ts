@@ -1,4 +1,4 @@
-/** Hand-written row types mirroring supabase/migrations/0001_init.sql. */
+/** Hand-written row types mirroring supabase/migrations/0001_init.sql and 0002_catalog_and_dirs.sql. */
 
 export type UserRole = "admin" | "staff"
 
@@ -23,8 +23,36 @@ export interface Customer {
   id: string
   company_name: string
   address: string | null
+  contact_name: string | null
+  phone: string | null
   created_at: string
   created_by: string | null
+}
+
+export interface Product {
+  id: string
+  name: string
+  sku: string | null
+  default_unit: string | null
+  default_price: number
+  default_vat_rate: number
+  note: string | null
+  created_at: string
+  created_by: string | null
+}
+
+export interface Buyer {
+  id: string
+  name: string
+  phone: string | null
+  created_at: string
+  created_by: string | null
+}
+
+export interface SpendBySupplierRow {
+  supplier_company: string
+  order_count: number
+  total_spend: number
 }
 
 export type OrderStatus = "draft" | "confirmed" | "closed"

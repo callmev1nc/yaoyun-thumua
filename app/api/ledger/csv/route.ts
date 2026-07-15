@@ -35,8 +35,13 @@ export async function GET(request: Request) {
 
   const esc = (v: string | number | null | undefined) => {
     if (v == null) return "";
-    const s = String(v);
-    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+    // Collapse ALL record separators (CR/LF/CRLF) to a space first, so a cell
+    // can never split a CSV row and a post-newline '=' payload can't run as a
+    // formula (CSV/Formula Injection, CWE-1236).
+    let s = String(v).replace(/\r\n|\r|\n/g, " ");
+    // Prefix formula-triggering leading characters.
+    if (/^[=+\-@]/.test(s)) s = "'" + s;
+    if (s.includes(",") || s.includes('"')) {
       return `"${s.replace(/"/g, '""')}"`;
     }
     return s;

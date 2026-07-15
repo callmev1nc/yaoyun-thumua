@@ -27,8 +27,9 @@ export default async function PurchaseOrdersPage({
 
   let query = supabase
     .from("purchase_orders")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("id, order_code, supplier_company, buyer_name, delivery_date, status, grand_total, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (q) {
     query = query.or(

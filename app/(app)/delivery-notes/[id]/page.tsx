@@ -36,20 +36,17 @@ export default async function DeliveryNoteDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: dn } = await supabase
-    .from("delivery_notes")
-    .select("*, purchase_orders(order_code, supplier_company)")
-    .eq("id", id)
-    .single();
-  if (!dn) notFound();
-  const note = dn as DeliveryNote & { purchase_orders: { order_code: string; supplier_company: string | null } };
-
-  const { data: itemsData } = await supabase
-    .from("delivery_items")
-    .select("*")
-    .eq("delivery_note_id", id)
-    .order("seq");
-  const items = (itemsData as DeliveryItem[]) ?? [];
+  const [dnRes, itemsRes] = await Promise.all([
+    supabase
+      .from("delivery_notes")
+      .select("*, purchase_orders(order_code, supplier_company)")
+      .eq("id", id)
+      .single(),
+    supabase.from("delivery_items").select("*").eq("delivery_note_id", id).order("seq"),
+  ]);
+  if (!dnRes.data) notFound();
+  const note = dnRes.data as DeliveryNote & { purchase_orders: { order_code: string; supplier_company: string | null } };
+  const items = (itemsRes.data as DeliveryItem[]) ?? [];
 
   return (
     <div className="space-y-6">

@@ -27,6 +27,7 @@ import {
 import { ArrowLeft, Printer, Truck, CheckCircle2, Clock } from "lucide-react";
 import { POStatusBadge } from "@/components/po-status-badge";
 import { DeleteOrderButton } from "@/components/delete-order-button";
+import { DuplicateOrderButton } from "@/components/duplicate-order-button";
 import { Progress } from "@/components/ui/progress";
 
 export default async function PurchaseOrderDetailPage({
@@ -37,15 +38,8 @@ export default async function PurchaseOrderDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: order } = await supabase
-    .from("purchase_orders")
-    .select("*")
-    .eq("id", id)
-    .single();
-  if (!order) notFound();
-  const po = order as PurchaseOrder;
-
-  const [itemsRes, payRes] = await Promise.all([
+  const [orderRes, itemsRes, payRes] = await Promise.all([
+    supabase.from("purchase_orders").select("*").eq("id", id).single(),
     supabase.from("order_items").select("*").eq("order_id", id).order("seq"),
     supabase
       .from("payment_schedules")
@@ -53,7 +47,8 @@ export default async function PurchaseOrderDetailPage({
       .eq("order_id", id)
       .order("installment_no"),
   ]);
-
+  if (!orderRes.data) notFound();
+  const po = orderRes.data as PurchaseOrder;
   const orderItems = (itemsRes.data as OrderItem[]) ?? [];
   const payRows = (payRes.data as PaymentSchedule[]) ?? [];
 
@@ -106,6 +101,7 @@ export default async function PurchaseOrderDetailPage({
               <Printer className="mr-2 h-4 w-4" /> In đơn
             </Link>
           </Button>
+          <DuplicateOrderButton id={po.id} />
           <DeleteOrderButton id={po.id} />
         </div>
       </div>
