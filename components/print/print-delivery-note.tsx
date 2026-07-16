@@ -74,7 +74,7 @@ export function PrintDeliveryNote({
             <tr>
               <td className="pp-label">交貨單號 / MÃ PHIẾU GIAO</td>
               <td className="pp-val" colSpan={3}>
-                {note.delivery_code}
+                {note.pgh_code || note.delivery_code}
               </td>
             </tr>
           </tbody>
@@ -99,7 +99,7 @@ export function PrintDeliveryNote({
                 <td className="right">{formatNumber(it.delivered_qty)}</td>
               </tr>
             ))}
-            {Array.from({ length: Math.max(0, 8 - items.length) }).map((_, i) => (
+            {items.length === 0 && Array.from({ length: 8 }).map((_, i) => (
               <tr key={`pad${i}`} className="pp-pad">
                 <td>&nbsp;</td>
                 <td></td>

@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Printer, Truck, CheckCircle2, Clock } from "lucide-react";
+import { ArrowLeft, Printer, Truck, Pencil, CheckCircle2, Clock } from "lucide-react";
 import { POStatusBadge } from "@/components/po-status-badge";
 import { DeleteOrderButton } from "@/components/delete-order-button";
 import { DuplicateOrderButton } from "@/components/duplicate-order-button";
@@ -92,6 +92,11 @@ export default async function PurchaseOrderDetailPage({
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
+            <Link href={`/purchase-orders/${po.id}/edit`}>
+              <Pencil className="mr-2 h-4 w-4" /> Sửa
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
             <Link href={`/delivery-notes/new?orderId=${po.id}`}>
               <Truck className="mr-2 h-4 w-4" /> Tạo phiếu giao hàng
             </Link>
@@ -149,7 +154,6 @@ export default async function PurchaseOrderDetailPage({
                   <TableHead className="text-right">Đã giao</TableHead>
                   <TableHead className="text-right">Còn lại</TableHead>
                   <TableHead className="text-right">Đơn giá</TableHead>
-                  <TableHead className="text-right">CK%</TableHead>
                   <TableHead className="text-right">Thành tiền</TableHead>
                 </TableRow>
               </TableHeader>
@@ -179,8 +183,7 @@ export default async function PurchaseOrderDetailPage({
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{formatNumber(it.unit_price)}</TableCell>
-                      <TableCell className="text-right">{it.discount_percent || "0"}%</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatDong(it.line_gross)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatDong(it.line_total)}</TableCell>
                     </TableRow>
                   );
                 })}

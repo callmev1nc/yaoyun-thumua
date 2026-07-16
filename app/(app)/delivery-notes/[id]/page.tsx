@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer, Pencil } from "lucide-react";
 import { DeleteDeliveryButton } from "@/components/delete-delivery-button";
 
 const statusLabel: Record<string, string> = {
@@ -59,7 +59,7 @@ export default async function DeliveryNoteDetailPage({
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">{note.delivery_code}</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">{note.pgh_code || note.delivery_code}</h1>
               <Badge variant={note.status === "delivered" ? "default" : note.status === "cancelled" ? "destructive" : "secondary"}>
                 {statusLabel[note.status] ?? note.status}
               </Badge>
@@ -70,6 +70,11 @@ export default async function DeliveryNoteDetailPage({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href={`/delivery-notes/${note.id}/edit`}>
+              <Pencil className="mr-2 h-4 w-4" /> Sửa
+            </Link>
+          </Button>
           <Button asChild variant="outline">
             <Link href={`/print/dn/${note.id}`} target="_blank">
               <Printer className="mr-2 h-4 w-4" /> In phiếu

@@ -31,8 +31,8 @@ export default async function DashboardPage() {
       .select("*", { count: "exact", head: true })
       .gte("created_at", monthStart),
     supabase
-      .from("ledger")
-      .select("net_before_vat"),
+      .from("purchase_orders")
+      .select("grand_total"),
     supabase
       .from("delivery_notes")
       .select("*", { count: "exact", head: true })
@@ -74,7 +74,7 @@ export default async function DashboardPage() {
   const monthOrders = orderCountRes.count ?? 0;
   const monthDeliveries = dnRes.count ?? 0;
   const totalNeedPay = (ledgerRes.data ?? []).reduce(
-    (s, r) => s + Number((r as { net_before_vat: number }).net_before_vat),
+    (s, r) => s + Number((r as { grand_total: number }).grand_total),
     0,
   );
   const totalPaid = (paySummaryRes.data ?? []).reduce(
@@ -116,7 +116,7 @@ export default async function DashboardPage() {
   const KPIS = [
     { label: "Đơn hàng trong tháng", value: formatNumber(monthOrders), href: "/purchase-orders", color: "from-primary/20 to-primary/5 text-primary" },
     { label: "Phiếu giao tháng này", value: formatNumber(monthDeliveries), href: "/delivery-notes", color: "from-blue-400/20 to-blue-400/5 text-blue-500" },
-    { label: "Tổng cần chi", value: formatDong(totalNeedPay), href: "/ledger", color: "from-emerald-500/20 to-emerald-500/5 text-emerald-600" },
+    { label: "Tổng cần chi", value: formatDong(totalNeedPay - totalPaid), href: "/ledger", color: "from-emerald-500/20 to-emerald-500/5 text-emerald-600" },
     { label: "Thanh toán đến hạn", value: formatDong(overduePayments + dueIn7), href: "/purchase-orders", color: "from-amber-500/20 to-amber-500/5 text-amber-600" },
   ];
 
@@ -234,7 +234,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Spend by supplier */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Chi tiêu theo NCC</CardTitle>
@@ -262,7 +261,6 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Spend last 6 months + upcoming deliveries */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>

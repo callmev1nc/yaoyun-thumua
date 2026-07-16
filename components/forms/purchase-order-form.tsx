@@ -3,10 +3,11 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2, Loader2, Bookmark, BookmarkCheck } from "lucide-react";
-import type { Supplier, Customer, Product, Buyer, OrderStatus } from "@/types/db";
+import { ArrowLeft, Plus, Trash2, Loader2, Bookmark, BookmarkCheck, Pencil } from "lucide-react";
+import type { Supplier, Customer, Product, Buyer, OrderStatus, PurchaseOrder, OrderItem, PaymentSchedule } from "@/types/db";
 import {
   createOrder,
+  updateOrder,
   type OrderItemInput,
   type PaymentInput,
 } from "@/lib/actions/orders";
@@ -42,12 +43,12 @@ import { Separator } from "@/components/ui/separator";
 
 interface LineRow {
   key: string;
+  id?: string; // order_item id — carried in edit mode so updateOrder edits rows in place
   product_name: string;
   unit: string;
   quantity: string;
   unit_price: string;
   vat_rate: number;
-  discount_percent: string;
 }
 
 interface PaymentRow {
@@ -66,64 +67,92 @@ export function PurchaseOrderForm({
   buyers,
   products,
   currentUserName,
+  mode,
+  initialOrder,
+  initialItems,
+  initialPayments,
 }: {
   suppliers: Supplier[];
   customers: Customer[];
   buyers: Buyer[];
   products: Product[];
   currentUserName: string;
+  mode?: "create" | "edit";
+  initialOrder?: PurchaseOrder;
+  initialItems?: OrderItem[];
+  initialPayments?: PaymentSchedule[];
 }) {
   const [pending, startTransition] = useTransition();
   const [tickPending, startTick] = useTransition();
 
-  const [supplierId, setSupplierId] = useState<string>("");
-  const [supplierCompany, setSupplierCompany] = useState("");
-  const [supplierContact, setSupplierContact] = useState("");
-  const [supplierPhone, setSupplierPhone] = useState("");
+  const isEdit = mode === "edit";
 
-  const [buyerName, setBuyerName] = useState(currentUserName);
-  const [buyerPhone, setBuyerPhone] = useState("");
+  const [supplierId, setSupplierId] = useState<string>(initialOrder?.supplier_id ?? "");
+  const [supplierCompany, setSupplierCompany] = useState(initialOrder?.supplier_company ?? "");
+  const [supplierContact, setSupplierContact] = useState(initialOrder?.supplier_contact ?? "");
+  const [supplierPhone, setSupplierPhone] = useState(initialOrder?.supplier_phone ?? "");
+
+  const [buyerName, setBuyerName] = useState(initialOrder?.buyer_name ?? currentUserName);
+  const [buyerPhone, setBuyerPhone] = useState(initialOrder?.buyer_phone ?? "");
   const [buyerId, setBuyerId] = useState<string>("");
 
-  const [receiverName, setReceiverName] = useState("");
-  const [receiverPhone, setReceiverPhone] = useState("");
-  const [receiverAddress, setReceiverAddress] = useState("");
-  const [customerId, setCustomerId] = useState<string>("");
-  const [customerCompany, setCustomerCompany] = useState("");
+  const [receiverName, setReceiverName] = useState(initialOrder?.receiver_name ?? "");
+  const [receiverPhone, setReceiverPhone] = useState(initialOrder?.receiver_phone ?? "");
+  const [receiverAddress, setReceiverAddress] = useState(initialOrder?.receiver_address ?? "");
+  const [customerId, setCustomerId] = useState<string>(initialOrder?.customer_id ?? "");
+  const [customerCompany, setCustomerCompany] = useState(initialOrder?.customer_company ?? "");
   const [customerSaved, setCustomerSaved] = useState(false);
-  const [projectCode, setProjectCode] = useState("");
+  const [projectCode, setProjectCode] = useState(initialOrder?.project_code ?? "");
 
-  const [deliveryDate, setDeliveryDate] = useState("");
-  const [status, setStatus] = useState<OrderStatus>("confirmed");
-  const [note, setNote] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState(initialOrder?.delivery_date ?? "");
+  const [status, setStatus] = useState<OrderStatus>(initialOrder?.status ?? "confirmed");
+  const [note, setNote] = useState(initialOrder?.note ?? "");
 
-  const [lines, setLines] = useState<LineRow[]>([
-    {
-      key: newKey(),
-      product_name: "",
-      unit: "",
-      quantity: "",
-      unit_price: "",
-      vat_rate: 8,
-      discount_percent: "",
-    },
-  ]);
+  const [lines, setLines] = useState<LineRow[]>(() =>
+    initialItems && initialItems.length > 0
+      ? initialItems.map((it) => ({
+          key: newKey(),
+          id: it.id,
+          product_name: it.product_name,
+          unit: it.unit ?? "",
+          quantity: String(it.quantity),
+          unit_price: String(it.unit_price),
+          vat_rate: it.vat_rate,
+        }))
+      : [
+          {
+            key: newKey(),
+            product_name: "",
+            unit: "PCS",
+            quantity: "",
+            unit_price: "",
+            vat_rate: 8,
+          },
+        ],
+  );
 
-  const [payments, setPayments] = useState<PaymentRow[]>([
-    { percent: "30", planned_date: "", paid: false, paid_date: "" },
-    { percent: "30", planned_date: "", paid: false, paid_date: "" },
-    { percent: "30", planned_date: "", paid: false, paid_date: "" },
-    { percent: "10", planned_date: "", paid: false, paid_date: "" },
-  ]);
+  const [payments, setPayments] = useState<PaymentRow[]>(() =>
+    initialPayments && initialPayments.length > 0
+      ? initialPayments.map((p) => ({
+          percent: String(p.percent),
+          planned_date: p.planned_date ?? "",
+          paid: p.status === "paid",
+          paid_date: p.paid_date ?? "",
+        }))
+      : [
+          { percent: "30", planned_date: "", paid: false, paid_date: "" },
+          { percent: "30", planned_date: "", paid: false, paid_date: "" },
+          { percent: "30", planned_date: "", paid: false, paid_date: "" },
+          { percent: "10", planned_date: "", paid: false, paid_date: "" },
+        ],
+  );
 
-  // ---- live totals ----
   const parsedLines = useMemo(
     () =>
       lines.map((l) => ({
         quantity: parseLooseNumber(l.quantity) || 0,
         unit_price: parseLooseNumber(l.unit_price) || 0,
         vat_rate: l.vat_rate,
-        discount_percent: parseLooseNumber(l.discount_percent) || 0,
       })),
     [lines],
   );
@@ -133,7 +162,6 @@ export function PurchaseOrderForm({
     [payments],
   );
 
-  // ---- derived save-state checks ----
   const isSupplierSaved = supplierCompany.trim()
     ? suppliers.some((s) => s.company_name.trim().toLowerCase() === supplierCompany.trim().toLowerCase())
     : false;
@@ -146,7 +174,6 @@ export function PurchaseOrderForm({
     ? customers.some((c) => c.company_name.trim().toLowerCase() === (customerCompany || receiverName).trim().toLowerCase())
     : false;
 
-  // ---- line helpers ----
   function updateLine(key: string, patch: Partial<LineRow>) {
     setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   }
@@ -156,11 +183,10 @@ export function PurchaseOrderForm({
       {
         key: newKey(),
         product_name: "",
-        unit: "",
+        unit: "PCS",
         quantity: "",
         unit_price: "",
         vat_rate: 8,
-        discount_percent: "",
       },
     ]);
   }
@@ -203,6 +229,8 @@ export function PurchaseOrderForm({
     setCustomerId(id);
     const c = customers.find((x) => x.id === id);
     if (c) {
+      setBuyerName(c.contact_name ?? buyerName);
+      setBuyerPhone(c.phone ?? buyerPhone);
       setReceiverName(c.contact_name ?? "");
       setReceiverPhone(c.phone ?? "");
       setReceiverAddress(c.address ?? "");
@@ -211,7 +239,6 @@ export function PurchaseOrderForm({
     }
   }
 
-  // ---- tick handlers ----
   function handleSaveSupplier() {
     startTick(async () => {
       const res = await createSupplier({
@@ -242,8 +269,6 @@ export function PurchaseOrderForm({
         phone: receiverPhone,
         address: receiverAddress,
       };
-      // If a customer is already linked, update it; otherwise create a new one.
-      // (Prevents duplicate customer rows on re-save after pick/edit.)
       if (customerId) {
         const res = await updateCustomer(customerId, payload);
         if (res?.error) { toast.error(res.error); return; }
@@ -283,12 +308,12 @@ export function PurchaseOrderForm({
     e.preventDefault();
     const items: OrderItemInput[] = lines
       .map((l) => ({
+        id: l.id,
         product_name: l.product_name,
         unit: l.unit,
         quantity: parseLooseNumber(l.quantity) || 0,
         unit_price: parseLooseNumber(l.unit_price) || 0,
         vat_rate: l.vat_rate,
-        discount_percent: parseLooseNumber(l.discount_percent) || 0,
       }))
       .filter((l) => l.product_name.trim() || l.quantity > 0 || l.unit_price > 0);
 
@@ -311,26 +336,49 @@ export function PurchaseOrderForm({
       }));
 
     startTransition(async () => {
-      const res = await createOrder({
-        supplier_id: supplierId || null,
-        supplier_company: supplierCompany,
-        supplier_contact: supplierContact,
-        supplier_phone: supplierPhone,
-        buyer_name: buyerName,
-        buyer_phone: buyerPhone,
-        receiver_name: receiverName,
-        receiver_phone: receiverPhone,
-        receiver_address: receiverAddress,
-        customer_id: customerId || null,
-        customer_company: customerCompany,
-        project_code: projectCode,
-        delivery_date: deliveryDate || null,
-        status,
-        note,
-        items,
-        payments: payInput,
-      });
-      if (res?.error) toast.error(res.error);
+      if (isEdit && initialOrder) {
+        const res = await updateOrder(initialOrder.id, {
+          supplier_id: supplierId || null,
+          supplier_company: supplierCompany,
+          supplier_contact: supplierContact,
+          supplier_phone: supplierPhone,
+          buyer_name: buyerName,
+          buyer_phone: buyerPhone,
+          receiver_name: receiverName,
+          receiver_phone: receiverPhone,
+          receiver_address: receiverAddress,
+          customer_id: customerId || null,
+          customer_company: customerCompany,
+          project_code: projectCode,
+          delivery_date: deliveryDate || null,
+          status,
+          note,
+          items,
+          payments: payInput,
+        });
+        if (res?.error) toast.error(res.error);
+      } else {
+        const res = await createOrder({
+          supplier_id: supplierId || null,
+          supplier_company: supplierCompany,
+          supplier_contact: supplierContact,
+          supplier_phone: supplierPhone,
+          buyer_name: buyerName,
+          buyer_phone: buyerPhone,
+          receiver_name: receiverName,
+          receiver_phone: receiverPhone,
+          receiver_address: receiverAddress,
+          customer_id: customerId || null,
+          customer_company: customerCompany,
+          project_code: projectCode,
+          delivery_date: deliveryDate || null,
+          status,
+          note,
+          items,
+          payments: payInput,
+        });
+        if (res?.error) toast.error(res.error);
+      }
     });
   }
 
@@ -339,24 +387,31 @@ export function PurchaseOrderForm({
       <div className="sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur-sm md:-mx-8 md:px-8">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon">
-            <Link href="/purchase-orders">
+            <Link href={isEdit && initialOrder ? `/purchase-orders/${initialOrder.id}` : "/purchase-orders"}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">Tạo đơn đặt hàng</h1>
-            <p className="text-xs text-muted-foreground">Đơn đặt hàng thu mua (Form 1)</p>
+            <h1 className="text-xl font-semibold tracking-tight">
+              {isEdit ? `Sửa đơn hàng` : "Tạo đơn đặt hàng"}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              {isEdit && initialOrder ? initialOrder.order_code : "Đơn đặt hàng thu mua (Form 1)"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button type="submit" disabled={pending}>
             {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Lưu đơn
+            {isEdit ? (
+              <><Pencil className="mr-2 h-4 w-4" /> Cập nhật</>
+            ) : (
+              "Lưu đơn"
+            )}
           </Button>
         </div>
       </div>
 
-      {/* Info block */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -520,7 +575,6 @@ export function PurchaseOrderForm({
         </Card>
       </div>
 
-      {/* Lines */}
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">Danh mục thu mua</CardTitle>
@@ -544,7 +598,6 @@ export function PurchaseOrderForm({
                   <th className="w-24 pb-2 pr-2">SL</th>
                   <th className="w-32 pb-2 pr-2">Đơn giá</th>
                   <th className="w-20 pb-2 pr-2">VAT</th>
-                  <th className="w-20 pb-2 pr-2">CK%</th>
                   <th className="w-32 pb-2 pr-2 text-right">T.TIỀN CHƯA VAT</th>
                   <th className="w-28 pb-2 pr-2 text-right">Tiền VAT</th>
                   <th className="w-32 pb-2 text-right">Tổng dòng</th>
@@ -557,7 +610,6 @@ export function PurchaseOrderForm({
                     quantity: parseLooseNumber(l.quantity) || 0,
                     unit_price: parseLooseNumber(l.unit_price) || 0,
                     vat_rate: l.vat_rate,
-                    discount_percent: parseLooseNumber(l.discount_percent) || 0,
                   };
                   const saved = isProductSaved(l.product_name);
                   return (
@@ -609,14 +661,6 @@ export function PurchaseOrderForm({
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="pb-2 pr-2">
-                        <Input
-                          inputMode="decimal"
-                          value={l.discount_percent}
-                          onChange={(e) => updateLine(l.key, { discount_percent: e.target.value })}
-                          placeholder="0"
-                        />
-                      </td>
                       <td className="pb-2 pr-2 pt-2 text-right tabular-nums text-muted-foreground">
                         {formatNumber(netBeforeVat(parsed))}
                       </td>
@@ -659,7 +703,6 @@ export function PurchaseOrderForm({
           <div className="ml-auto w-full max-w-sm rounded-lg border border-primary/20 bg-primary/[0.03] p-4">
             <div className="space-y-1 text-sm">
               <TotalRow label="Tổng chưa thuế" value={formatDong(totals.subtotalExVat)} />
-              <TotalRow label="Tiền chiết khấu" value={`- ${formatDong(totals.discountTotal)}`} muted />
               <TotalRow label="Tiền thuế (VAT)" value={formatDong(totals.vatTotal)} />
               <Separator className="my-1" />
               <TotalRow label="Tổng gồm thuế" value={formatDong(totals.grandTotal)} strong />
@@ -668,7 +711,6 @@ export function PurchaseOrderForm({
         </CardContent>
       </Card>
 
-      {/* Payments */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">

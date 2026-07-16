@@ -28,18 +28,14 @@ export async function GET(request: Request) {
   if (from) query = query.gte("created_at", from);
   if (to) query = query.lte("created_at", to + "T23:59:59");
   if (companyFilter) query = query.ilike("company", `%${companyFilter}%`);
-  if (orderFilter) query = query.ilike("order_code", `%${orderFilter}%`);
+  if (orderFilter) query = query.or(`order_code.ilike.%${orderFilter}%,po_code.ilike.%${orderFilter}%`);
 
   const { data } = await query;
   const rows = (data as LedgerRow[]) ?? [];
 
   const esc = (v: string | number | null | undefined) => {
     if (v == null) return "";
-    // Collapse ALL record separators (CR/LF/CRLF) to a space first, so a cell
-    // can never split a CSV row and a post-newline '=' payload can't run as a
-    // formula (CSV/Formula Injection, CWE-1236).
     let s = String(v).replace(/\r\n|\r|\n/g, " ");
-    // Prefix formula-triggering leading characters.
     if (/^[=+\-@]/.test(s)) s = "'" + s;
     if (s.includes(",") || s.includes('"')) {
       return `"${s.replace(/"/g, '""')}"`;
@@ -47,7 +43,7 @@ export async function GET(request: Request) {
     return s;
   };
 
-  const header = "Ngày tạo,Ngày giao,Công ty,Đơn hàng,Mã dự án,Tên SP,DVT,SL,Đơn giá,Thành tiền,CK%,Tiền CK,Còn lại,Ghi chú";
+  const header = "Ngày tạo,Ngày giao,Công ty,Đơn hàng,Mã dự án,Tên SP,DVT,SL,Đơn giá,Thành tiền,Còn lại,Ngày DK thanh toán,Ghi chú";
   const csvLines = [header];
 
   for (const r of rows) {
@@ -56,16 +52,15 @@ export async function GET(request: Request) {
         esc(formatDate(r.created_at)),
         esc(formatDate(r.delivery_date)),
         esc(r.company),
-        esc(r.order_code),
+        esc(r.po_code ?? r.order_code),
         esc(r.project_code),
         esc(r.product_name),
         esc(r.unit),
         esc(r.quantity),
         esc(r.unit_price),
-        esc(r.line_gross),
-        esc(r.discount_percent),
-        esc(r.discount_amount),
-        esc(r.net_before_vat),
+        esc(r.line_total),
+        esc(r.order_remaining),
+        esc(formatDate(r.payment_due_date)),
         esc(r.note),
       ].join(","),
     );

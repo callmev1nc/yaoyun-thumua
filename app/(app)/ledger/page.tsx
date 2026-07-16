@@ -47,7 +47,7 @@ export default async function LedgerPage({
   if (from) query = query.gte("created_at", from);
   if (to) query = query.lte("created_at", to + "T23:59:59");
   if (companyFilter) query = query.ilike("company", `%${companyFilter}%`);
-  if (orderFilter) query = query.ilike("order_code", `%${orderFilter}%`);
+  if (orderFilter) query = query.or(`order_code.ilike.%${orderFilter}%,po_code.ilike.%${orderFilter}%`);
 
   const [dataRes, companiesRes] = await Promise.all([
     query,
@@ -59,14 +59,14 @@ export default async function LedgerPage({
   ]);
   const rows = (dataRes.data as LedgerRow[]) ?? [];
 
-  const sumGross = rows.reduce((s, r) => s + Number(r.line_gross), 0);
-  const sumDiscount = rows.reduce((s, r) => s + Number(r.discount_amount), 0);
-  const sumNet = rows.reduce((s, r) => s + Number(r.net_before_vat), 0);
+  const sumTotal = rows.reduce((s, r) => s + Number(r.line_total), 0);
+  const remainingByOrder = new Map<string, number>();
+  for (const r of rows) remainingByOrder.set(r.order_id, Number(r.order_remaining));
+  const sumNeedPay = Array.from(remainingByOrder.values()).reduce((s, v) => s + v, 0);
   const totalItems = rows.length;
 
   const companies = Array.from(new Set((companiesRes.data ?? []).map((r: { company: string | null }) => r.company).filter(Boolean)));
 
-  // CSV export URL — we use a plain link that triggers a download via API route.
   const csvParams = new URLSearchParams();
   if (from) csvParams.set("from", from);
   if (to) csvParams.set("to", to);
@@ -89,7 +89,6 @@ export default async function LedgerPage({
         </Button>
       </div>
 
-      {/* Filters */}
       <form
         className="flex flex-wrap items-end gap-4 rounded-lg border p-4"
         method="GET"
@@ -145,8 +144,7 @@ export default async function LedgerPage({
         </Button>
       </form>
 
-      {/* Totals cards */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Tổng số dòng</CardTitle>
@@ -160,15 +158,7 @@ export default async function LedgerPage({
             <CardTitle className="text-sm font-medium text-muted-foreground">Σ Thành tiền</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{formatDong(sumGross)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Σ Tiền CK</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{formatDong(sumDiscount)}</p>
+            <p className="text-2xl font-semibold tabular-nums">{formatDong(sumTotal)}</p>
           </CardContent>
         </Card>
         <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
@@ -176,12 +166,11 @@ export default async function LedgerPage({
             <CardTitle className="text-sm font-semibold text-primary">SỐ TIỀN CẦN CHI</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold tabular-nums text-primary">{formatDong(sumNet)}</p>
+            <p className="text-2xl font-bold tabular-nums text-primary">{formatDong(sumNeedPay)}</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
@@ -196,9 +185,8 @@ export default async function LedgerPage({
               <TableHead className="text-right">SL</TableHead>
               <TableHead className="text-right">Đơn giá</TableHead>
               <TableHead className="text-right">Thành tiền</TableHead>
-              <TableHead className="text-right">CK%</TableHead>
-              <TableHead className="text-right">Tiền CK</TableHead>
               <TableHead className="text-right">Còn lại</TableHead>
+              <TableHead className="whitespace-nowrap">Ngày DK thanh toán</TableHead>
               <TableHead>Ghi chú</TableHead>
             </TableRow>
           </TableHeader>
@@ -207,7 +195,7 @@ export default async function LedgerPage({
               <EmptyState
                 title="Không có dữ liệu"
                 description="Thử thay đổi bộ lọc hoặc tạo đơn hàng mới."
-                colSpan={14}
+                colSpan={13}
               />
             )}
             {rows.map((r, i) => (
@@ -215,16 +203,15 @@ export default async function LedgerPage({
                 <TableCell className="whitespace-nowrap text-xs">{formatDate(r.created_at)}</TableCell>
                 <TableCell className="whitespace-nowrap text-xs">{formatDate(r.delivery_date)}</TableCell>
                 <TableCell className="whitespace-nowrap">{r.company ?? "—"}</TableCell>
-                <TableCell className="whitespace-nowrap font-medium">{r.order_code}</TableCell>
+                <TableCell className="whitespace-nowrap font-medium">{r.po_code ?? r.order_code}</TableCell>
                 <TableCell className="whitespace-nowrap">{r.project_code ?? "—"}</TableCell>
                 <TableCell>{r.product_name}</TableCell>
                 <TableCell>{r.unit ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatNumber(r.quantity)}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatNumber(r.unit_price)}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatDong(r.line_gross)}</TableCell>
-                <TableCell className="text-right">{r.discount_percent ? `${formatNumber(r.discount_percent)}%` : "—"}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatDong(r.discount_amount)}</TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{formatDong(r.net_before_vat)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatDong(r.line_total)}</TableCell>
+                <TableCell className="text-right tabular-nums font-medium">{formatDong(r.order_remaining)}</TableCell>
+                <TableCell className="whitespace-nowrap text-xs">{formatDate(r.payment_due_date)}</TableCell>
                 <TableCell className="max-w-40 truncate text-xs text-muted-foreground" title={r.note ?? ""}>
                   {r.note ?? ""}
                 </TableCell>

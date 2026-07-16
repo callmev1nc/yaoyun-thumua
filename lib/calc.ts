@@ -5,11 +5,10 @@
  * `supabase/migrations/0001_init.sql` so the live form preview matches what
  * the database stores. If you change one, change the other.
  *
- * Rule (decision): discount reduces the VAT-able base.
- *   net_before_vat = gross - discount
+ * Rule: no discount.
+ *   net_before_vat = gross
  *   vat            = net_before_vat * vat_rate
  *   line_total     = net_before_vat + vat
- * The original Form 1 sample (8.120.000 × 8% = 649.600) matches when discount = 0.
  */
 
 /** Round to whole VND (no sub-unit currency in Vietnam). */
@@ -22,7 +21,6 @@ export interface LineInput {
   quantity: number
   unit_price: number
   vat_rate: number // 8 | 10
-  discount_percent: number // 0..100
 }
 
 /** Thành tiền (gross) = quantity × unit_price. */
@@ -30,14 +28,9 @@ export function lineGross(i: LineInput): number {
   return vnd((Number(i.quantity) || 0) * (Number(i.unit_price) || 0))
 }
 
-/** Tiền chiết khấu = gross × discount%. */
-export function discountAmount(i: LineInput): number {
-  return vnd(lineGross(i) * ((Number(i.discount_percent) || 0) / 100))
-}
-
-/** Còn lại / base chịu thuế = gross − discount. */
+/** Còn lại / base chịu thuế = gross (no discount). */
 export function netBeforeVat(i: LineInput): number {
-  return vnd(lineGross(i) - discountAmount(i))
+  return lineGross(i)
 }
 
 /** Tiền VAT của dòng = net_before_vat × vat_rate. */
@@ -51,12 +44,11 @@ export function lineTotal(i: LineInput): number {
 }
 
 export interface OrderTotals {
-  grossTotal: number // Σ thành tiền (Form 3 "SUM")
-  discountTotal: number // Σ tiền chiết khấu
-  subtotalExVat: number // Tổng chưa thuế (sau CK) — Form 1 "總價 (未稅)"
-  vatTotal: number // Tiền thuế — Form 1 "VAT… 為"
-  grandTotal: number // Tổng gồm thuế — Form 1 "總價 (已含稅)"
-  needToPayPreVat: number // Σ còn lại — Form 3 "SỐ TIỀN CẦN CHI"
+  grossTotal: number // Σ thành tiền
+  subtotalExVat: number // Tổng chưa thuế
+  vatTotal: number // Tiền thuế
+  grandTotal: number // Tổng gồm thuế
+  needToPayPreVat: number // Σ còn lại
 }
 
 /** Roll up many lines into the order totals shown on Form 1 / Form 3. */
@@ -64,7 +56,6 @@ export function orderTotals(items: LineInput[]): OrderTotals {
   return items.reduce<OrderTotals>(
     (acc, i) => {
       acc.grossTotal += lineGross(i)
-      acc.discountTotal += discountAmount(i)
       acc.subtotalExVat += netBeforeVat(i)
       acc.vatTotal += lineVat(i)
       acc.grandTotal += lineTotal(i)
@@ -73,7 +64,6 @@ export function orderTotals(items: LineInput[]): OrderTotals {
     },
     {
       grossTotal: 0,
-      discountTotal: 0,
       subtotalExVat: 0,
       vatTotal: 0,
       grandTotal: 0,

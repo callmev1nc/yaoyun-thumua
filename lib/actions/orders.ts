@@ -5,16 +5,16 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { installmentAmount } from "@/lib/calc";
-import { createOrderSchema } from "@/lib/validation";
+import { createOrderSchema, updateOrderSchema } from "@/lib/validation";
 import type { OrderStatus } from "@/types/db";
 
 export interface OrderItemInput {
+  id?: string;
   product_name: string;
   unit: string;
   quantity: number;
   unit_price: number;
   vat_rate: number;
-  discount_percent: number;
 }
 
 export interface PaymentInput {
@@ -57,24 +57,18 @@ async function nextOrderCode(
 
   let max = 0;
   for (const r of data ?? []) {
-    // Strip the "YY{year}" prefix and parse ONLY the trailing sequence number.
-    // Otherwise "YY202600001" would parse as 202600001 (year included) and the
-    // next code would come out as "YY2026202600002" instead of "YY202600002".
     const seq = parseInt((r.order_code ?? "").slice(prefix.length), 10);
     if (!Number.isNaN(seq)) max = Math.max(max, seq);
   }
   return `${prefix}${String(max + 1).padStart(5, "0")}`;
 }
 
-// Sinh mã đơn đặt PO{body}-{NN}. body = chữ số trong mã dự án.
-// NN = (suffix lớn nhất trong các đơn cùng project_code) + 1.
-// VD project_code "YY202603005" -> "PO202603005-01", "-02"...
 async function nextPoCode(
   supabase: Awaited<ReturnType<typeof createClient>>,
   projectCode: string,
 ): Promise<string | null> {
-  const body = projectCode.replace(/\D/g, ""); // chỉ giữ chữ số
-  if (!body) return null; // mã dự án không có số -> không sinh mã đơn đặt
+  const body = projectCode.replace(/\D/g, "");
+  if (!body) return null;
   const { data } = await supabase
     .from("purchase_orders")
     .select("po_code")
@@ -101,7 +95,6 @@ export async function createOrder(input: CreateOrderInput) {
   const projectCode = input.project_code?.trim() || null;
   const po_code = projectCode ? await nextPoCode(supabase, projectCode) : null;
 
-  // 1. Create the order header (totals default 0; trigger recomputes on item insert).
   const { data: order, error: orderErr } = await supabase
     .from("purchase_orders")
     .insert({
@@ -129,7 +122,6 @@ export async function createOrder(input: CreateOrderInput) {
 
   if (orderErr) return { error: orderErr.message };
 
-  // 2. Insert items → trigger recomputes order totals.
   const { error: itemsErr } = await supabase.from("order_items").insert(
     input.items.map((it, i) => ({
       order_id: order!.id,
@@ -139,7 +131,6 @@ export async function createOrder(input: CreateOrderInput) {
       quantity: it.quantity,
       unit_price: it.unit_price,
       vat_rate: it.vat_rate,
-      discount_percent: it.discount_percent,
     })),
   );
   if (itemsErr) {
@@ -147,7 +138,6 @@ export async function createOrder(input: CreateOrderInput) {
     return { error: itemsErr.message };
   }
 
-  // 3. Read recomputed grand total, then insert payments with computed amounts.
   const { data: fresh } = await supabase
     .from("purchase_orders")
     .select("grand_total")
@@ -210,7 +200,7 @@ export async function duplicateOrder(id: string) {
     .order("seq");
   const items = (origItems ?? []) as Array<{
     product_name: string; unit: string | null; quantity: number;
-    unit_price: number; vat_rate: number; discount_percent: number;
+    unit_price: number; vat_rate: number;
   }>;
 
   const { data: origPayments } = await supabase
@@ -261,7 +251,6 @@ export async function duplicateOrder(id: string) {
       quantity: it.quantity,
       unit_price: it.unit_price,
       vat_rate: it.vat_rate,
-      discount_percent: it.discount_percent,
     })),
   );
   if (itemsErr) {
@@ -299,4 +288,123 @@ export async function duplicateOrder(id: string) {
 
   revalidatePath("/purchase-orders");
   redirect(`/purchase-orders/${order.id}`);
+}
+
+export async function updateOrder(id: string, input: CreateOrderInput) {
+  const parsed = updateOrderSchema.safeParse(input);
+  if (!parsed.success) return { error: "Dữ liệu không hợp lệ" };
+  const ctx = await getCurrentUser();
+  if (!ctx) return { error: "Chưa đăng nhập" };
+  const supabase = await createClient();
+
+  const projectCode = input.project_code?.trim() || null;
+
+  await supabase.from("purchase_orders").update({
+    supplier_id: input.supplier_id || null,
+    supplier_company: input.supplier_company.trim() || null,
+    supplier_contact: input.supplier_contact.trim() || null,
+    supplier_phone: input.supplier_phone.trim() || null,
+    buyer_name: input.buyer_name.trim() || null,
+    buyer_phone: input.buyer_phone.trim() || null,
+    receiver_name: input.receiver_name.trim() || null,
+    receiver_phone: input.receiver_phone.trim() || null,
+    receiver_address: input.receiver_address.trim() || null,
+    customer_id: input.customer_id || null,
+    customer_company: input.customer_company?.trim() || null,
+    project_code: projectCode,
+    delivery_date: input.delivery_date || null,
+    status: input.status,
+    note: input.note.trim() || null,
+  }).eq("id", id);
+
+  // Items: when the order already has deliveries we MUST edit rows in place,
+  // because delivery_items.order_item_id is ON DELETE CASCADE — bulk-deleting
+  // order_items would wipe the delivery history.
+  const { data: existingDeliveries } = await supabase
+    .from("delivery_notes")
+    .select("id")
+    .eq("order_id", id)
+    .neq("status", "cancelled")
+    .limit(1);
+  const hasDeliveries = (existingDeliveries ?? []).length > 0;
+
+  const { data: existing } = await supabase.from("order_items").select("id").eq("order_id", id);
+  const existingIds = new Set((existing ?? []).map((r) => r.id));
+  const submittedIds = new Set(input.items.map((it) => it.id).filter(Boolean) as string[]);
+
+  if (hasDeliveries) {
+    // 1. Delete removed items — but only if nothing has been delivered against them.
+    for (const oid of existingIds) {
+      if (!submittedIds.has(oid)) {
+        const { data: delData } = await supabase.rpc("delivered_total", { p_order_item_id: oid });
+        const delivered = Number(delData) || 0;
+        if (delivered > 0) {
+          return { error: "Không thể xoá dòng đã giao hàng. Đặt số lượng về 0 hoặc huỷ phiếu giao trước." };
+        }
+        await supabase.from("order_items").delete().eq("id", oid);
+      }
+    }
+    // 2. Update existing rows in place + insert new ones, preserving submitted order via seq.
+    let seq = 0;
+    for (const it of input.items) {
+      seq++;
+      if (it.id && existingIds.has(it.id)) {
+        await supabase.from("order_items").update({
+          seq,
+          product_name: it.product_name.trim(),
+          unit: it.unit.trim() || null,
+          quantity: it.quantity,
+          unit_price: it.unit_price,
+          vat_rate: it.vat_rate,
+        }).eq("id", it.id);
+      } else {
+        await supabase.from("order_items").insert({
+          order_id: id,
+          seq,
+          product_name: it.product_name.trim(),
+          unit: it.unit.trim() || null,
+          quantity: it.quantity,
+          unit_price: it.unit_price,
+          vat_rate: it.vat_rate,
+        });
+      }
+    }
+  } else {
+    // No deliveries — safe to bulk replace.
+    await supabase.from("order_items").delete().eq("order_id", id);
+    let seq = 0;
+    for (const it of input.items) {
+      seq++;
+      await supabase.from("order_items").insert({
+        order_id: id,
+        seq,
+        product_name: it.product_name.trim(),
+        unit: it.unit.trim() || null,
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        vat_rate: it.vat_rate,
+      });
+    }
+  }
+
+  // Payments: safe to replace (no FK from deliveries)
+  await supabase.from("payment_schedules").delete().eq("order_id", id);
+  const { data: fresh } = await supabase.from("purchase_orders").select("grand_total").eq("id", id).single();
+  if (input.payments.length) {
+    await supabase.from("payment_schedules").insert(
+      input.payments.map((p, i) => ({
+        order_id: id,
+        installment_no: i + 1,
+        percent: p.percent,
+        planned_date: p.planned_date || null,
+        status: p.status,
+        paid_date: p.paid_date || null,
+        amount: installmentAmount(fresh!.grand_total, p.percent),
+      })),
+    );
+  }
+  revalidatePath("/purchase-orders");
+  revalidatePath(`/purchase-orders/${id}`);
+  revalidatePath("/ledger");
+  redirect(`/purchase-orders/${id}`);
 }

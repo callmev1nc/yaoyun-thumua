@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# temp / docs not for repo
+unpacked/
+*.docx

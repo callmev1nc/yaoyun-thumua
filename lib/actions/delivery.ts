@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import type { DeliveryStatus } from "@/types/db";
+import { updateDeliverySchema } from "@/lib/validation";
 
 export interface DeliveryItemInput {
   order_item_id: string;
@@ -21,6 +22,8 @@ export interface CreateDeliveryInput {
   responsible_phone: string;
   receiver_name: string;
   receiver_phone: string;
+  pgh_code?: string;
+  customer_id?: string | null;
   items: DeliveryItemInput[];
 }
 
@@ -28,17 +31,18 @@ async function nextDeliveryCode(
   supabase: Awaited<ReturnType<typeof createClient>>,
   year: number,
 ): Promise<string> {
+  const prefix = `GH${year}`;
   const { data } = await supabase
     .from("delivery_notes")
     .select("delivery_code")
-    .like("delivery_code", `GH${year}%`);
+    .like("delivery_code", `${prefix}%`);
 
   let max = 0;
   for (const r of data ?? []) {
-    const m = r.delivery_code.match(/(\d+)$/);
-    if (m) max = Math.max(max, parseInt(m[1], 10));
+    const seq = parseInt((r.delivery_code ?? "").slice(prefix.length), 10);
+    if (!Number.isNaN(seq)) max = Math.max(max, seq);
   }
-  return `GH${year}${String(max + 1).padStart(5, "0")}`;
+  return `${prefix}${String(max + 1).padStart(5, "0")}`;
 }
 
 export async function createDelivery(input: CreateDeliveryInput) {
@@ -86,7 +90,7 @@ export async function createDelivery(input: CreateDeliveryInput) {
     }
   }
 
-  const delivery_code = await nextDeliveryCode(supabase, year);
+  const delivery_code = input.pgh_code?.trim() || await nextDeliveryCode(supabase, year);
 
   const { data: dn, error: dnErr } = await supabase
     .from("delivery_notes")
@@ -99,6 +103,8 @@ export async function createDelivery(input: CreateDeliveryInput) {
       responsible_phone: input.responsible_phone.trim() || null,
       receiver_name: input.receiver_name.trim() || null,
       receiver_phone: input.receiver_phone.trim() || null,
+      pgh_code: input.pgh_code?.trim() || null,
+      customer_id: input.customer_id || null,
       status: "delivered",
       created_by: ctx.user.id,
     })
@@ -145,4 +151,80 @@ export async function deleteDelivery(id: string) {
   revalidatePath("/delivery-notes");
   revalidatePath(`/purchase-orders/${dn.order_id}`);
   redirect("/delivery-notes");
+}
+
+export async function updateDelivery(id: string, input: CreateDeliveryInput) {
+  const parsed = updateDeliverySchema.safeParse(input);
+  if (!parsed.success) return { error: "Dữ liệu không hợp lệ" };
+  const ctx = await getCurrentUser();
+  if (!ctx) return { error: "Chưa đăng nhập" };
+  const supabase = await createClient();
+
+  // Re-validate delivered_qty ≤ remaining (same as createDelivery)
+  const { data: orderItems } = await supabase
+    .from("order_items")
+    .select("id, quantity, product_name")
+    .eq("order_id", input.order_id);
+  const itemMap = new Map((orderItems ?? []).map((i) => [i.id, i]));
+
+  const { data: deliveredData } = await supabase
+    .from("delivery_items")
+    .select("order_item_id, delivered_qty, delivery_notes!inner(status)")
+    .in("order_item_id", (orderItems ?? []).map((i) => i.id));
+  const deliveredMap = new Map<string, number>();
+  for (const d of (deliveredData as unknown as Array<{
+    order_item_id: string;
+    delivered_qty: number;
+    delivery_notes: Array<{ status: string }>;
+  }> | null) ?? []) {
+    const dn = Array.isArray(d.delivery_notes) ? d.delivery_notes[0] : d.delivery_notes;
+    if (dn?.status === "cancelled") continue;
+    deliveredMap.set(d.order_item_id, (deliveredMap.get(d.order_item_id) ?? 0) + Number(d.delivered_qty));
+  }
+
+  // Subtract this DN's own existing delivered qty from the running total
+  const { data: existingItems } = await supabase
+    .from("delivery_items")
+    .select("order_item_id, delivered_qty")
+    .eq("delivery_note_id", id);
+  for (const ex of existingItems ?? []) {
+    deliveredMap.set(ex.order_item_id, (deliveredMap.get(ex.order_item_id) ?? 0) - Number(ex.delivered_qty));
+  }
+
+  for (const it of input.items) {
+    const item = itemMap.get(it.order_item_id);
+    if (!item) return { error: `Sản phẩm "${it.product_name}" không thuộc đơn hàng này` };
+    const delivered = deliveredMap.get(it.order_item_id) ?? 0;
+    const remaining = Number(item.quantity) - delivered;
+    if (it.delivered_qty > remaining) {
+      return { error: `Sản phẩm "${item.product_name}" chỉ còn ${remaining} có thể giao (đã giao ${delivered}/${item.quantity})` };
+    }
+  }
+
+  await supabase.from("delivery_notes").update({
+    delivery_date: input.delivery_date || null,
+    customer_info: input.customer_info.trim() || null,
+    responsible_person: input.responsible_person.trim() || null,
+    responsible_phone: input.responsible_phone.trim() || null,
+    receiver_name: input.receiver_name.trim() || null,
+    receiver_phone: input.receiver_phone.trim() || null,
+    pgh_code: input.pgh_code?.trim() || null,
+    customer_id: input.customer_id || null,
+  }).eq("id", id);
+
+  await supabase.from("delivery_items").delete().eq("delivery_note_id", id);
+  await supabase.from("delivery_items").insert(
+    input.items.map((it, i) => ({
+      delivery_note_id: id,
+      order_item_id: it.order_item_id,
+      seq: i + 1,
+      product_name: it.product_name.trim(),
+      unit: it.unit || null,
+      delivered_qty: it.delivered_qty,
+    })),
+  );
+  revalidatePath("/delivery-notes");
+  revalidatePath(`/delivery-notes/${id}`);
+  revalidatePath(`/purchase-orders/${input.order_id}`);
+  redirect(`/delivery-notes/${id}`);
 }

@@ -92,10 +92,8 @@ export interface OrderItem {
   quantity: number
   unit_price: number
   vat_rate: number
-  discount_percent: number
   // GENERATED columns (DB-computed):
   line_gross: number
-  discount_amount: number
   net_before_vat: number
   line_vat: number
   line_total: number
@@ -126,6 +124,8 @@ export interface DeliveryNote {
   responsible_phone: string | null
   receiver_name: string | null
   receiver_phone: string | null
+  pgh_code: string | null
+  customer_id: string | null
   status: DeliveryStatus
   created_at: string
   created_by: string | null
@@ -152,12 +152,12 @@ export interface LedgerRow {
   unit: string | null
   quantity: number
   unit_price: number
-  line_gross: number
-  discount_percent: number
-  discount_amount: number
+  line_total: number
   net_before_vat: number
   note: string | null
   project_code: string | null
   po_code: string | null
   customer_company: string | null
+  payment_due_date: string | null
+  order_remaining: number
 }

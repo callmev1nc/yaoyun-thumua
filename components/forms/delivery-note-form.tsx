@@ -3,10 +3,11 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-import type { PurchaseOrder, OrderItem } from "@/types/db";
+import { Loader2, Pencil } from "lucide-react";
+import type { PurchaseOrder, OrderItem, DeliveryNote, DeliveryItem } from "@/types/db";
 import {
   createDelivery,
+  updateDelivery,
   type DeliveryItemInput,
 } from "@/lib/actions/delivery";
 import { formatNumber, parseLooseNumber } from "@/lib/number-format";
@@ -35,24 +36,50 @@ export function DeliveryNoteForm({
   items,
   deliveredByItem,
   customerName,
+  mode,
+  initialNote,
+  initialItems,
 }: {
   order: PurchaseOrder;
   items: OrderItem[];
   deliveredByItem: Map<string, number>;
   customerName?: string;
+  mode?: "create" | "edit";
+  initialNote?: DeliveryNote;
+  initialItems?: DeliveryItem[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  const [deliveryDate, setDeliveryDate] = useState("");
-  const [customerInfo, setCustomerInfo] = useState(customerName ?? "");
-  const [responsiblePerson, setResponsiblePerson] = useState(order.buyer_name ?? "");
-  const [responsiblePhone, setResponsiblePhone] = useState(order.buyer_phone ?? "");
-  const [receiverName, setReceiverName] = useState(order.receiver_name ?? "");
-  const [receiverPhone, setReceiverPhone] = useState(order.receiver_phone ?? "");
+  const isEdit = mode === "edit";
 
-  const [rows, setRows] = useState<ItemRow[]>(() =>
-    items.map((it) => {
+  const [deliveryDate, setDeliveryDate] = useState(isEdit && initialNote ? (initialNote.delivery_date ?? "") : (order.delivery_date ?? ""));
+  const [customerInfo, setCustomerInfo] = useState(isEdit && initialNote ? (initialNote.customer_info ?? "") : (customerName ?? ""));
+  const [responsiblePerson, setResponsiblePerson] = useState(isEdit && initialNote ? (initialNote.responsible_person ?? "") : (order.buyer_name ?? ""));
+  const [responsiblePhone, setResponsiblePhone] = useState(isEdit && initialNote ? (initialNote.responsible_phone ?? "") : (order.buyer_phone ?? ""));
+  const [receiverName, setReceiverName] = useState(isEdit && initialNote ? (initialNote.receiver_name ?? "") : (order.receiver_name ?? ""));
+  const [receiverPhone, setReceiverPhone] = useState(isEdit && initialNote ? (initialNote.receiver_phone ?? "") : (order.receiver_phone ?? ""));
+  const [pghCode, setPghCode] = useState(initialNote?.pgh_code ?? "");
+
+  const [rows, setRows] = useState<ItemRow[]>(() => {
+    if (isEdit && initialItems) {
+      return initialItems.map((it) => {
+        const oi = items.find((x) => x.id === it.order_item_id);
+        const already = deliveredByItem.get(it.order_item_id) ?? 0;
+        const orderedQty = oi ? Number(oi.quantity) : 0;
+        const alreadyWithoutThis = already - Number(it.delivered_qty);
+        return {
+          order_item_id: it.order_item_id,
+          product_name: it.product_name,
+          unit: it.unit,
+          ordered_qty: orderedQty,
+          already_delivered: alreadyWithoutThis,
+          remaining: Math.max(0, orderedQty - alreadyWithoutThis),
+          delivered_qty: String(it.delivered_qty),
+        };
+      });
+    }
+    return items.map((it) => {
       const already = deliveredByItem.get(it.id) ?? 0;
       const remaining = Number(it.quantity) - already;
       return {
@@ -64,8 +91,8 @@ export function DeliveryNoteForm({
         remaining: Math.max(0, remaining),
         delivered_qty: String(Math.max(0, remaining)),
       };
-    }),
-  );
+    });
+  });
 
   const warningLines = useMemo(() => {
     const out: string[] = [];
@@ -108,17 +135,35 @@ export function DeliveryNoteForm({
     }
 
     startTransition(async () => {
-      const res = await createDelivery({
-        order_id: order.id,
-        delivery_date: deliveryDate || null,
-        customer_info: customerInfo,
-        responsible_person: responsiblePerson,
-        responsible_phone: responsiblePhone,
-        receiver_name: receiverName,
-        receiver_phone: receiverPhone,
-        items,
-      });
-      if (res?.error) toast.error(res.error);
+      if (isEdit && initialNote) {
+        const res = await updateDelivery(initialNote.id, {
+          order_id: order.id,
+          delivery_date: deliveryDate || null,
+          customer_info: customerInfo,
+          responsible_person: responsiblePerson,
+          responsible_phone: responsiblePhone,
+          receiver_name: receiverName,
+          receiver_phone: receiverPhone,
+          pgh_code: pghCode || undefined,
+          customer_id: order.customer_id,
+          items,
+        });
+        if (res?.error) toast.error(res.error);
+      } else {
+        const res = await createDelivery({
+          order_id: order.id,
+          delivery_date: deliveryDate || null,
+          customer_info: customerInfo,
+          responsible_person: responsiblePerson,
+          responsible_phone: responsiblePhone,
+          receiver_name: receiverName,
+          receiver_phone: receiverPhone,
+          pgh_code: pghCode || undefined,
+          customer_id: order.customer_id,
+          items,
+        });
+        if (res?.error) toast.error(res.error);
+      }
     });
   }
 
@@ -126,17 +171,24 @@ export function DeliveryNoteForm({
     <form onSubmit={submit} className="space-y-6">
       <div className="sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur-sm md:-mx-8 md:px-8">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Tạo phiếu giao hàng</h1>
+          <h1 className="text-xl font-semibold tracking-tight">
+            {isEdit ? "Sửa phiếu giao hàng" : "Tạo phiếu giao hàng"}
+          </h1>
           <p className="text-xs text-muted-foreground">
-            Đơn hàng: {order.order_code} — {order.supplier_company ?? "—"}
-            {order.project_code ? ` · Dự án: ${order.project_code}` : ""}
-            {order.po_code ? ` · ${order.po_code}` : ""}
+            {isEdit && initialNote ? initialNote.delivery_code : `Đơn hàng: ${order.order_code}`}
+            {!isEdit && ` — ${order.supplier_company ?? "—"}`}
+            {!isEdit && order.project_code ? ` · Dự án: ${order.project_code}` : ""}
+            {!isEdit && order.po_code ? ` · ${order.po_code}` : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button type="submit" disabled={pending}>
             {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Lưu phiếu
+            {isEdit ? (
+              <><Pencil className="mr-2 h-4 w-4" /> Cập nhật</>
+            ) : (
+              "Lưu phiếu"
+            )}
           </Button>
         </div>
       </div>
@@ -152,6 +204,7 @@ export function DeliveryNoteForm({
               <Field label="Người chịu trách nhiệm" value={responsiblePerson} onChange={setResponsiblePerson} />
               <Field label="SĐT" value={responsiblePhone} onChange={setResponsiblePhone} />
             </div>
+            <Field label="Mã PGH (tuỳ chọn)" value={pghCode} onChange={setPghCode} placeholder="VD: REXON-01 (để trống = tự sinh)" />
           </CardContent>
         </Card>
         <Card>
@@ -238,15 +291,17 @@ function Field({
   label,
   value,
   onChange,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  placeholder?: string;
 }) {
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
     </div>
   );
 }
