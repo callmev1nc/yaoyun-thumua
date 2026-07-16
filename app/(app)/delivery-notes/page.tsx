@@ -33,7 +33,7 @@ export default async function DeliveryNotesPage({
 
   let query = supabase
     .from("delivery_notes")
-    .select("id, delivery_code, receiver_name, delivery_date, status, created_at, purchase_orders!inner(order_code, supplier_company)")
+    .select("id, delivery_code, receiver_name, delivery_date, status, created_at, purchase_orders!inner(order_code, project_code, po_code, supplier_company)")
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -43,7 +43,7 @@ export default async function DeliveryNotesPage({
     );
   }
   const { data } = await query;
-  const notes = (data as unknown as Array<DeliveryNote & { purchase_orders: { order_code: string; supplier_company: string | null } }>) ?? [];
+  const notes = (data as unknown as Array<DeliveryNote & { purchase_orders: { order_code: string; project_code: string | null; po_code: string | null; supplier_company: string | null } }>) ?? [];
 
   return (
     <div className="space-y-6">
@@ -72,6 +72,8 @@ export default async function DeliveryNotesPage({
             <TableRow>
               <TableHead>Mã phiếu</TableHead>
               <TableHead>Đơn hàng</TableHead>
+              <TableHead>Mã dự án</TableHead>
+              <TableHead>Mã đơn đặt</TableHead>
               <TableHead>NCC</TableHead>
               <TableHead>Người nhận</TableHead>
               <TableHead>Ngày giao</TableHead>
@@ -85,7 +87,7 @@ export default async function DeliveryNotesPage({
                 icon={Truck}
                 title="Chưa có phiếu giao hàng nào"
                 description="Tạo phiếu giao hàng từ đơn đặt hàng."
-                colSpan={7}
+                colSpan={9}
               />
             )}
             {notes.map((n) => (
@@ -99,6 +101,8 @@ export default async function DeliveryNotesPage({
                   </Link>
                 </TableCell>
                 <TableCell>{n.purchase_orders?.order_code ?? "—"}</TableCell>
+                <TableCell>{n.purchase_orders?.project_code ?? "—"}</TableCell>
+                <TableCell>{n.purchase_orders?.po_code ?? "—"}</TableCell>
                 <TableCell>{n.purchase_orders?.supplier_company ?? "—"}</TableCell>
                 <TableCell>{n.receiver_name ?? "—"}</TableCell>
                 <TableCell>{formatDate(n.delivery_date)}</TableCell>

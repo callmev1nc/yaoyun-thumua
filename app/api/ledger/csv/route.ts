@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     return s;
   };
 
-  const header = "Ngày tạo,Ngày giao,Công ty,Đơn hàng,Tên SP,DVT,SL,Đơn giá,Thành tiền,CK%,Tiền CK,Còn lại,Ghi chú";
+  const header = "Ngày tạo,Ngày giao,Công ty,Đơn hàng,Mã dự án,Tên SP,DVT,SL,Đơn giá,Thành tiền,CK%,Tiền CK,Còn lại,Ghi chú";
   const csvLines = [header];
 
   for (const r of rows) {
@@ -57,6 +57,7 @@ export async function GET(request: Request) {
         esc(formatDate(r.delivery_date)),
         esc(r.company),
         esc(r.order_code),
+        esc(r.project_code),
         esc(r.product_name),
         esc(r.unit),
         esc(r.quantity),

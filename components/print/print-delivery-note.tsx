@@ -8,10 +8,14 @@ export function PrintDeliveryNote({
   note,
   items,
   orderCode,
+  projectCode,
+  poCode,
 }: {
   note: DeliveryNote;
   items: DeliveryItem[];
   orderCode?: string | null;
+  projectCode?: string | null;
+  poCode?: string | null;
 }) {
   useEffect(() => {
     const t = setTimeout(() => window.print(), 300);
@@ -60,6 +64,12 @@ export function PrintDeliveryNote({
               <td className="pp-val">{orderCode ?? ""}</td>
               <td className="pp-label">交貨日期 / NGÀY GIAO</td>
               <td className="pp-val">{formatDate(note.delivery_date)}</td>
+            </tr>
+            <tr>
+              <td className="pp-label">專案代碼 / MÃ DỰ ÁN</td>
+              <td className="pp-val">{projectCode ?? ""}</td>
+              <td className="pp-label">訂單代碼 / MÃ ĐƠN ĐẶT</td>
+              <td className="pp-val">{poCode ?? ""}</td>
             </tr>
             <tr>
               <td className="pp-label">交貨單號 / MÃ PHIẾU GIAO</td>

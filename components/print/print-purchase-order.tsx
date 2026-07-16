@@ -56,6 +56,12 @@ export function PrintPurchaseOrder({
               v2={order.order_code}
             />
             <InfoRow
+              l1="MÃ DỰ ÁN"
+              v1={order.project_code ?? ""}
+              l2="MÃ ĐƠN ĐẶT"
+              v2={order.po_code ?? ""}
+            />
+            <InfoRow
               l1="NGƯỜI PHỤ TRÁCH NCC"
               v1={order.supplier_contact ?? ""}
               l2="SDT NCC"

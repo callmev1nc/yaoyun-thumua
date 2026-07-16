@@ -15,7 +15,7 @@ export default async function PrintDeliveryNotePage({
 
   const { data: dn } = await supabase
     .from("delivery_notes")
-    .select("*, purchase_orders(order_code)")
+    .select("*, purchase_orders(order_code, project_code, po_code)")
     .eq("id", id)
     .single();
   if (!dn) notFound();
@@ -27,11 +27,15 @@ export default async function PrintDeliveryNotePage({
     .order("seq");
   const items = (itemsData as DeliveryItem[]) ?? [];
 
+  const po = (dn as unknown as { purchase_orders: { order_code: string; project_code: string | null; po_code: string | null } }).purchase_orders;
+
   return (
     <PrintDeliveryNote
       note={dn as DeliveryNote}
       items={items}
-      orderCode={(dn as unknown as { purchase_orders: { order_code: string } }).purchase_orders?.order_code}
+      orderCode={po?.order_code}
+      projectCode={po?.project_code}
+      poCode={po?.po_code}
     />
   );
 }

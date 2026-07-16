@@ -115,6 +115,9 @@ export default async function PurchaseOrderDetailPage({
             <Row label="Công ty" value={po.supplier_company} />
             <Row label="Người phụ trách" value={po.supplier_contact} />
             <Row label="SĐT" value={po.supplier_phone} />
+            <Row label="Khách hàng" value={po.customer_company} />
+            <Row label="Mã dự án" value={po.project_code} />
+            <Row label="Mã đơn đặt" value={po.po_code} />
           </CardContent>
         </Card>
         <Card>

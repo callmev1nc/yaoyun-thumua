@@ -46,7 +46,7 @@ export default async function DashboardPage() {
       .lte("planned_date", sevenDaysLater),
     supabase
       .from("purchase_orders")
-      .select("id, order_code, supplier_company, grand_total, status, created_at")
+      .select("id, order_code, project_code, po_code, supplier_company, grand_total, status, created_at")
       .order("created_at", { ascending: false })
       .limit(5),
     supabase
@@ -64,7 +64,7 @@ export default async function DashboardPage() {
       .gte("created_at", sixMonthsAgo),
     supabase
       .from("purchase_orders")
-      .select("id, order_code, supplier_company, delivery_date, status")
+      .select("id, order_code, project_code, po_code, supplier_company, delivery_date, status")
       .eq("status", "confirmed")
       .gte("delivery_date", today)
       .lte("delivery_date", sevenDaysLater)
@@ -111,7 +111,7 @@ export default async function DashboardPage() {
   const spend6moEntries = Array.from(spendByMonth.entries()).sort(([a], [b]) => a.localeCompare(b));
   const max6mo = spend6moEntries.length > 0 ? Math.max(...spend6moEntries.map(([, v]) => v)) : 0;
 
-  const upcomingDeliveries = (upcomingDeliveriesRes.data ?? []) as Array<{ id: string; order_code: string; supplier_company: string | null; delivery_date: string; status: string }>;
+  const upcomingDeliveries = (upcomingDeliveriesRes.data ?? []) as Array<{ id: string; order_code: string; project_code: string | null; po_code: string | null; supplier_company: string | null; delivery_date: string; status: string }>;
 
   const KPIS = [
     { label: "Đơn hàng trong tháng", value: formatNumber(monthOrders), href: "/purchase-orders", color: "from-primary/20 to-primary/5 text-primary" },
@@ -180,7 +180,7 @@ export default async function DashboardPage() {
                         <POStatusBadge status={o.status} />
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {o.supplier_company ?? "—"} · {formatDate(o.created_at)}
+                        {o.supplier_company ?? "—"}{o.project_code ? ` · ${o.project_code}` : ""} · {formatDate(o.created_at)}
                       </p>
                     </div>
                     <span className="ml-4 text-sm font-semibold tabular-nums">{formatDong(o.grand_total)}</span>
@@ -311,7 +311,7 @@ export default async function DashboardPage() {
                         <POStatusBadge status={o.status as OrderStatus} />
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {o.supplier_company ?? "—"} · Giao: {formatDate(o.delivery_date)}
+                        {o.supplier_company ?? "—"}{o.project_code ? ` · ${o.project_code}` : ""} · Giao: {formatDate(o.delivery_date)}
                       </p>
                     </div>
                   </Link>
