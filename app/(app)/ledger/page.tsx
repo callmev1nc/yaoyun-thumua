@@ -190,6 +190,7 @@ export default async function LedgerPage({
               <TableHead className="whitespace-nowrap">Ngày giao</TableHead>
               <TableHead className="whitespace-nowrap">Công ty</TableHead>
               <TableHead className="whitespace-nowrap">Đơn hàng</TableHead>
+              <TableHead className="whitespace-nowrap">Mã dự án</TableHead>
               <TableHead className="whitespace-nowrap">Tên SP</TableHead>
               <TableHead className="w-14">DVT</TableHead>
               <TableHead className="text-right">SL</TableHead>
@@ -206,7 +207,7 @@ export default async function LedgerPage({
               <EmptyState
                 title="Không có dữ liệu"
                 description="Thử thay đổi bộ lọc hoặc tạo đơn hàng mới."
-                colSpan={13}
+                colSpan={14}
               />
             )}
             {rows.map((r, i) => (
@@ -215,6 +216,7 @@ export default async function LedgerPage({
                 <TableCell className="whitespace-nowrap text-xs">{formatDate(r.delivery_date)}</TableCell>
                 <TableCell className="whitespace-nowrap">{r.company ?? "—"}</TableCell>
                 <TableCell className="whitespace-nowrap font-medium">{r.order_code}</TableCell>
+                <TableCell className="whitespace-nowrap">{r.project_code ?? "—"}</TableCell>
                 <TableCell>{r.product_name}</TableCell>
                 <TableCell>{r.unit ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatNumber(r.quantity)}</TableCell>

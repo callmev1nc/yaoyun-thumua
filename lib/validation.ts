@@ -11,6 +11,8 @@ export const createOrderSchema = z.object({
   receiver_phone: z.string().max(30),
   receiver_address: z.string().max(300),
   customer_id: z.string().uuid().nullable(),
+  customer_company: z.string().max(200),
+  project_code: z.string().max(50),
   delivery_date: z.string().nullable(),
   status: z.enum(["draft", "confirmed", "closed"]),
   note: z.string().max(500),

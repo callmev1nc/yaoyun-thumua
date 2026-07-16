@@ -27,13 +27,13 @@ export default async function PurchaseOrdersPage({
 
   let query = supabase
     .from("purchase_orders")
-    .select("id, order_code, supplier_company, buyer_name, delivery_date, status, grand_total, created_at")
+    .select("id, order_code, customer_company, project_code, po_code, supplier_company, buyer_name, delivery_date, status, grand_total, created_at")
     .order("created_at", { ascending: false })
     .limit(100);
 
   if (q) {
     query = query.or(
-      `order_code.ilike.%${q}%,supplier_company.ilike.%${q}%,buyer_name.ilike.%${q}%`,
+      `order_code.ilike.%${q}%,project_code.ilike.%${q}%,po_code.ilike.%${q}%,supplier_company.ilike.%${q}%,buyer_name.ilike.%${q}%`,
     );
   }
   const { data } = await query;
@@ -70,6 +70,9 @@ export default async function PurchaseOrdersPage({
           <TableHeader>
             <TableRow>
               <TableHead>Mã đơn</TableHead>
+              <TableHead>Khách hàng</TableHead>
+              <TableHead>Mã dự án</TableHead>
+              <TableHead>Mã đơn đặt</TableHead>
               <TableHead>Nhà cung cấp</TableHead>
               <TableHead>Người mua</TableHead>
               <TableHead>Ngày giao</TableHead>
@@ -84,7 +87,7 @@ export default async function PurchaseOrdersPage({
                 icon={ClipboardList}
                 title="Chưa có đơn đặt hàng nào"
                 description="Tạo đơn đặt hàng đầu tiên để bắt đầu."
-                colSpan={7}
+                colSpan={10}
                 action={
                   <Button asChild size="sm">
                     <Link href="/purchase-orders/new">
@@ -104,6 +107,9 @@ export default async function PurchaseOrdersPage({
                     {o.order_code}
                   </Link>
                 </TableCell>
+                <TableCell>{o.customer_company ?? "—"}</TableCell>
+                <TableCell>{o.project_code ?? "—"}</TableCell>
+                <TableCell>{o.po_code ?? "—"}</TableCell>
                 <TableCell>{o.supplier_company ?? "—"}</TableCell>
                 <TableCell>{o.buyer_name ?? "—"}</TableCell>
                 <TableCell>{formatDate(o.delivery_date)}</TableCell>

@@ -36,6 +36,8 @@ export interface CreateOrderInput {
   receiver_phone: string;
   receiver_address: string;
   customer_id: string | null;
+  customer_company?: string;
+  project_code?: string | null;
   delivery_date: string | null;
   status: OrderStatus;
   note: string;
@@ -64,6 +66,27 @@ async function nextOrderCode(
   return `${prefix}${String(max + 1).padStart(5, "0")}`;
 }
 
+// Sinh mã đơn đặt PO{body}-{NN}. body = chữ số trong mã dự án.
+// NN = (suffix lớn nhất trong các đơn cùng project_code) + 1.
+// VD project_code "YY202603005" -> "PO202603005-01", "-02"...
+async function nextPoCode(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  projectCode: string,
+): Promise<string | null> {
+  const body = projectCode.replace(/\D/g, ""); // chỉ giữ chữ số
+  if (!body) return null; // mã dự án không có số -> không sinh mã đơn đặt
+  const { data } = await supabase
+    .from("purchase_orders")
+    .select("po_code")
+    .eq("project_code", projectCode.trim());
+  let max = 0;
+  for (const r of data ?? []) {
+    const m = (r.po_code ?? "").match(/-(\d+)$/);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  }
+  return `PO${body}-${String(max + 1).padStart(2, "0")}`;
+}
+
 export async function createOrder(input: CreateOrderInput) {
   const parsed = createOrderSchema.safeParse(input);
   if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
@@ -74,6 +97,9 @@ export async function createOrder(input: CreateOrderInput) {
   const supabase = await createClient();
   const year = new Date().getFullYear();
   const order_code = (input.order_code?.trim() || (await nextOrderCode(supabase, year))).trim();
+
+  const projectCode = input.project_code?.trim() || null;
+  const po_code = projectCode ? await nextPoCode(supabase, projectCode) : null;
 
   // 1. Create the order header (totals default 0; trigger recomputes on item insert).
   const { data: order, error: orderErr } = await supabase
@@ -90,6 +116,9 @@ export async function createOrder(input: CreateOrderInput) {
       receiver_phone: input.receiver_phone.trim() || null,
       receiver_address: input.receiver_address.trim() || null,
       customer_id: input.customer_id || null,
+      customer_company: input.customer_company?.trim() || null,
+      project_code: projectCode,
+      po_code,
       delivery_date: input.delivery_date || null,
       status: input.status,
       note: input.note.trim() || null,
@@ -195,6 +224,7 @@ export async function duplicateOrder(id: string) {
 
   const year = new Date().getFullYear();
   const order_code = await nextOrderCode(supabase, year);
+  const dupPoCode = orig.project_code ? await nextPoCode(supabase, orig.project_code) : null;
 
   const { data: order, error: orderErr } = await supabase
     .from("purchase_orders")
@@ -210,6 +240,9 @@ export async function duplicateOrder(id: string) {
       receiver_phone: orig.receiver_phone,
       receiver_address: orig.receiver_address,
       customer_id: orig.customer_id,
+      customer_company: orig.customer_company,
+      project_code: orig.project_code,
+      po_code: dupPoCode,
       delivery_date: orig.delivery_date,
       note: orig.note,
       status: "draft",

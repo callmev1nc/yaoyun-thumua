@@ -70,6 +70,9 @@ export interface PurchaseOrder {
   receiver_phone: string | null
   receiver_address: string | null
   customer_id: string | null
+  customer_company: string | null
+  project_code: string | null
+  po_code: string | null
   delivery_date: string | null
   status: OrderStatus
   note: string | null
@@ -154,4 +157,7 @@ export interface LedgerRow {
   discount_amount: number
   net_before_vat: number
   note: string | null
+  project_code: string | null
+  po_code: string | null
+  customer_company: string | null
 }

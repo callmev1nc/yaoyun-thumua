@@ -129,6 +129,8 @@ export function DeliveryNoteForm({
           <h1 className="text-xl font-semibold tracking-tight">Tạo phiếu giao hàng</h1>
           <p className="text-xs text-muted-foreground">
             Đơn hàng: {order.order_code} — {order.supplier_company ?? "—"}
+            {order.project_code ? ` · Dự án: ${order.project_code}` : ""}
+            {order.po_code ? ` · ${order.po_code}` : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">

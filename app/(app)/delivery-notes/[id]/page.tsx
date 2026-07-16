@@ -39,13 +39,13 @@ export default async function DeliveryNoteDetailPage({
   const [dnRes, itemsRes] = await Promise.all([
     supabase
       .from("delivery_notes")
-      .select("*, purchase_orders(order_code, supplier_company)")
+      .select("*, purchase_orders(order_code, project_code, po_code, supplier_company)")
       .eq("id", id)
       .single(),
     supabase.from("delivery_items").select("*").eq("delivery_note_id", id).order("seq"),
   ]);
   if (!dnRes.data) notFound();
-  const note = dnRes.data as DeliveryNote & { purchase_orders: { order_code: string; supplier_company: string | null } };
+  const note = dnRes.data as DeliveryNote & { purchase_orders: { order_code: string; project_code: string | null; po_code: string | null; supplier_company: string | null } };
   const items = (itemsRes.data as DeliveryItem[]) ?? [];
 
   return (
@@ -86,6 +86,8 @@ export default async function DeliveryNoteDetailPage({
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
             <Row label="Khách hàng" value={note.customer_info} />
+            <Row label="Mã dự án" value={note.purchase_orders?.project_code} />
+            <Row label="Mã đơn đặt" value={note.purchase_orders?.po_code} />
             <Row label="Người chịu trách nhiệm" value={note.responsible_person} />
             <Row label="SĐT" value={note.responsible_phone} />
           </CardContent>

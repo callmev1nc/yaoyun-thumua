@@ -91,6 +91,7 @@ export function PurchaseOrderForm({
   const [customerId, setCustomerId] = useState<string>("");
   const [customerCompany, setCustomerCompany] = useState("");
   const [customerSaved, setCustomerSaved] = useState(false);
+  const [projectCode, setProjectCode] = useState("");
 
   const [deliveryDate, setDeliveryDate] = useState("");
   const [status, setStatus] = useState<OrderStatus>("confirmed");
@@ -321,6 +322,8 @@ export function PurchaseOrderForm({
         receiver_phone: receiverPhone,
         receiver_address: receiverAddress,
         customer_id: customerId || null,
+        customer_company: customerCompany,
+        project_code: projectCode,
         delivery_date: deliveryDate || null,
         status,
         note,
@@ -481,6 +484,17 @@ export function PurchaseOrderForm({
               >
                 {customerSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
               </Button>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Mã dự án</Label>
+              <Input
+                value={projectCode}
+                onChange={(e) => setProjectCode(e.target.value.toUpperCase())}
+                placeholder="VD: YY202603005"
+              />
+              <p className="text-xs text-muted-foreground">
+                Mã đơn đặt sẽ tự sinh, ví dụ PO202603005-01.
+              </p>
             </div>
             <Separator />
             <div className="grid grid-cols-2 gap-3">
