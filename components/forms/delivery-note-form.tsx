@@ -53,7 +53,11 @@ export function DeliveryNoteForm({
 
   const isEdit = mode === "edit";
 
-  const [deliveryDate, setDeliveryDate] = useState(isEdit && initialNote ? (initialNote.delivery_date ?? "") : (order.delivery_date ?? ""));
+  const [deliveryDate, setDeliveryDate] = useState(
+    isEdit && initialNote
+      ? (initialNote.delivery_date ?? "")
+      : (order.delivery_date || new Date().toISOString().slice(0, 10))
+  );
   const [customerInfo, setCustomerInfo] = useState(isEdit && initialNote ? (initialNote.customer_info ?? "") : (customerName ?? ""));
   const [responsiblePerson, setResponsiblePerson] = useState(isEdit && initialNote ? (initialNote.responsible_person ?? "") : (order.buyer_name ?? ""));
   const [responsiblePhone, setResponsiblePhone] = useState(isEdit && initialNote ? (initialNote.responsible_phone ?? "") : (order.buyer_phone ?? ""));

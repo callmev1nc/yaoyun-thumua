@@ -31,12 +31,16 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
   const [editing, setEditing] = useState<Customer | null>(null);
   const [company, setCompany] = useState("");
   const [address, setAddress] = useState("");
+  const [receiverName, setReceiverName] = useState("");
+  const [receiverPhone, setReceiverPhone] = useState("");
   const [pending, startTransition] = useTransition();
 
   function reset() {
     setEditing(null);
     setCompany("");
     setAddress("");
+    setReceiverName("");
+    setReceiverPhone("");
   }
 
   function openAdd() {
@@ -48,6 +52,8 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
     setEditing(c);
     setCompany(c.company_name);
     setAddress(c.address ?? "");
+    setReceiverName(c.receiver_name ?? "");
+    setReceiverPhone(c.receiver_phone ?? "");
     setOpen(true);
   }
 
@@ -59,8 +65,18 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
     }
     startTransition(async () => {
       const res = editing
-        ? await updateCustomer(editing.id, { company_name: company, address })
-        : await createCustomer({ company_name: company, address });
+        ? await updateCustomer(editing.id, {
+            company_name: company,
+            address,
+            receiver_name: receiverName,
+            receiver_phone: receiverPhone,
+          })
+        : await createCustomer({
+            company_name: company,
+            address,
+            receiver_name: receiverName,
+            receiver_phone: receiverPhone,
+          });
       if (res?.error) toast.error(res.error);
       else {
         toast.success(editing ? "Đã cập nhật" : "Đã thêm khách hàng");
@@ -101,6 +117,24 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
                 <Label htmlFor="address">Địa chỉ</Label>
                 <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="receiverName">Người nhận</Label>
+                  <Input
+                    id="receiverName"
+                    value={receiverName}
+                    onChange={(e) => setReceiverName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="receiverPhone">SĐT người nhận</Label>
+                  <Input
+                    id="receiverPhone"
+                    value={receiverPhone}
+                    onChange={(e) => setReceiverPhone(e.target.value)}
+                  />
+                </div>
+              </div>
               <DialogFooter>
                 <Button type="submit" disabled={pending}>
                   {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -117,6 +151,8 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Tên công ty</TableHead>
+              <TableHead>Người nhận</TableHead>
+              <TableHead>SĐT người nhận</TableHead>
               <TableHead>Địa chỉ</TableHead>
               <TableHead className="w-[100px] text-right">Thao tác</TableHead>
             </TableRow>
@@ -127,12 +163,14 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
                 icon={Boxes}
                 title="Chưa có khách hàng nào"
                 description="Thêm khách hàng đầu tiên để bắt đầu."
-                colSpan={3}
+                colSpan={5}
               />
             )}
             {customers.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.company_name}</TableCell>
+                <TableCell>{c.receiver_name || "—"}</TableCell>
+                <TableCell>{c.receiver_phone || "—"}</TableCell>
                 <TableCell>{c.address || "—"}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(c)} title="Sửa" aria-label="Sửa khách hàng">

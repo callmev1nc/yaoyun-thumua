@@ -131,6 +131,8 @@ export const createCustomerSchema = z.object({
   address: z.string().max(300).nullable().optional(),
   contact_name: z.string().max(100).nullable().optional(),
   phone: z.string().max(30).nullable().optional(),
+  receiver_name: z.string().max(100).nullable().optional(),
+  receiver_phone: z.string().max(30).nullable().optional(),
 })
 
 export const updateCustomerSchema = z.object({
@@ -138,6 +140,8 @@ export const updateCustomerSchema = z.object({
   address: z.string().max(300).nullable().optional(),
   contact_name: z.string().max(100).nullable().optional(),
   phone: z.string().max(30).nullable().optional(),
+  receiver_name: z.string().max(100).nullable().optional(),
+  receiver_phone: z.string().max(30).nullable().optional(),
 })
 
 export const createProductSchema = z.object({

@@ -60,8 +60,8 @@ export function PrintDeliveryNote({
               <td className="pp-val">{note.receiver_phone ?? ""}</td>
             </tr>
             <tr>
-              <td className="pp-label">訂單編號 / MÃ ĐƠN HÀNG</td>
-              <td className="pp-val">{orderCode ?? ""}</td>
+              <td className="pp-label">交貨單號 / MÃ PHIẾU GIAO</td>
+              <td className="pp-val">{note.pgh_code || note.delivery_code}</td>
               <td className="pp-label">交貨日期 / NGÀY GIAO</td>
               <td className="pp-val">{formatDate(note.delivery_date)}</td>
             </tr>
@@ -70,12 +70,6 @@ export function PrintDeliveryNote({
               <td className="pp-val">{projectCode ?? ""}</td>
               <td className="pp-label">訂單代碼 / MÃ ĐƠN ĐẶT</td>
               <td className="pp-val">{poCode ?? ""}</td>
-            </tr>
-            <tr>
-              <td className="pp-label">交貨單號 / MÃ PHIẾU GIAO</td>
-              <td className="pp-val" colSpan={3}>
-                {note.pgh_code || note.delivery_code}
-              </td>
             </tr>
           </tbody>
         </table>

@@ -25,6 +25,8 @@ export interface Customer {
   address: string | null
   contact_name: string | null
   phone: string | null
+  receiver_name: string | null
+  receiver_phone: string | null
   created_at: string
   created_by: string | null
 }

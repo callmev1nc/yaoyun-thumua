@@ -231,8 +231,8 @@ export function PurchaseOrderForm({
     if (c) {
       setBuyerName(c.contact_name ?? buyerName);
       setBuyerPhone(c.phone ?? buyerPhone);
-      setReceiverName(c.contact_name ?? "");
-      setReceiverPhone(c.phone ?? "");
+      setReceiverName(c.receiver_name ?? "");
+      setReceiverPhone(c.receiver_phone ?? "");
       setReceiverAddress(c.address ?? "");
       setCustomerCompany(c.company_name);
       setCustomerSaved(true);
@@ -265,8 +265,10 @@ export function PurchaseOrderForm({
     startTick(async () => {
       const payload = {
         company_name: customerCompany || receiverName,
-        contact_name: receiverName,
-        phone: receiverPhone,
+        contact_name: buyerName || null,
+        phone: buyerPhone || null,
+        receiver_name: receiverName || null,
+        receiver_phone: receiverPhone || null,
         address: receiverAddress,
       };
       if (customerId) {

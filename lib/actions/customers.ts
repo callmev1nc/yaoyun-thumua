@@ -10,6 +10,8 @@ export async function createCustomer(input: {
   address?: string | null;
   contact_name?: string | null;
   phone?: string | null;
+  receiver_name?: string | null;
+  receiver_phone?: string | null;
 }) {
   const parsed = createCustomerSchema.safeParse(input);
   if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
@@ -17,10 +19,6 @@ export async function createCustomer(input: {
   if (!ctx) return { error: "Chưa đăng nhập" };
   const supabase = await createClient();
 
-  // Soft-dedup by company name (escape LIKE wildcards). If a customer with the
-  // same name exists, update its contact fields and return its id — this makes
-  // the recipient tick idempotent so repeated saves never create duplicates,
-  // even if the client-side id state doesn't persist across revalidation.
   const escapedName = parsed.data.company_name
     .trim()
     .replace(/\\/g, "\\\\")
@@ -38,6 +36,8 @@ export async function createCustomer(input: {
         address: parsed.data.address?.trim() || null,
         contact_name: parsed.data.contact_name?.trim() || null,
         phone: parsed.data.phone?.trim() || null,
+        receiver_name: parsed.data.receiver_name?.trim() || null,
+        receiver_phone: parsed.data.receiver_phone?.trim() || null,
       })
       .eq("id", existing.id);
     if (upErr) return { error: upErr.message };
@@ -51,6 +51,8 @@ export async function createCustomer(input: {
     address: parsed.data.address?.trim() || null,
     contact_name: parsed.data.contact_name?.trim() || null,
     phone: parsed.data.phone?.trim() || null,
+    receiver_name: parsed.data.receiver_name?.trim() || null,
+    receiver_phone: parsed.data.receiver_phone?.trim() || null,
     created_by: ctx.user.id,
   }).select("id").single();
   if (error) return { error: error.message };
@@ -61,7 +63,14 @@ export async function createCustomer(input: {
 
 export async function updateCustomer(
   id: string,
-  input: { company_name: string; address?: string | null; contact_name?: string | null; phone?: string | null },
+  input: {
+    company_name: string;
+    address?: string | null;
+    contact_name?: string | null;
+    phone?: string | null;
+    receiver_name?: string | null;
+    receiver_phone?: string | null;
+  },
 ) {
   const parsed = updateCustomerSchema.safeParse(input);
   if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
@@ -75,6 +84,8 @@ export async function updateCustomer(
       address: parsed.data.address?.trim() || null,
       contact_name: parsed.data.contact_name?.trim() || null,
       phone: parsed.data.phone?.trim() || null,
+      receiver_name: parsed.data.receiver_name?.trim() || null,
+      receiver_phone: parsed.data.receiver_phone?.trim() || null,
     })
     .eq("id", id);
   if (error) return { error: error.message };
