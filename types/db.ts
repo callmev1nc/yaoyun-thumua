@@ -7,6 +7,7 @@ export interface Profile {
   full_name: string | null
   role: UserRole
   email?: string | null
+  preferred_language?: "vi" | "zh-Hant" | "zh-Hans" | null
   created_at: string
 }
 

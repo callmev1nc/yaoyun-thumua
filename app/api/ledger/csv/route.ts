@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { getTranslations, getLocale } from "next-intl/server";
 import { formatDate } from "@/lib/number-format";
+import type { Locale } from "@/i18n/request";
 import type { LedgerRow } from "@/types/db";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +13,9 @@ export async function GET(request: Request) {
   if (!ctx) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
+
+  const locale = await getLocale() as Locale;
+  const t = await getTranslations("ledger");
 
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from") ?? "";
@@ -43,14 +48,19 @@ export async function GET(request: Request) {
     return s;
   };
 
-  const header = "Ngày tạo,Ngày giao,Công ty,Đơn hàng,Mã dự án,Tên SP,DVT,SL,Đơn giá,Thành tiền,Còn lại,Ngày DK thanh toán,Ghi chú";
+  const header = [
+    t("col.createdAt"), t("col.deliveredAt"), t("col.company"), t("col.order"),
+    t("col.projectCode"), t("col.product"), t("col.unit"), t("col.qty"),
+    t("col.unitPrice"), t("col.amount"), t("col.remaining"), t("col.paymentDue"), t("col.note"),
+  ].join(",");
+
   const csvLines = [header];
 
   for (const r of rows) {
     csvLines.push(
       [
-        esc(formatDate(r.created_at)),
-        esc(formatDate(r.delivery_date)),
+        esc(formatDate(r.created_at, locale)),
+        esc(formatDate(r.delivery_date, locale)),
         esc(r.company),
         esc(r.po_code ?? r.order_code),
         esc(r.project_code),
@@ -60,7 +70,7 @@ export async function GET(request: Request) {
         esc(r.unit_price),
         esc(r.line_total),
         esc(r.order_remaining),
-        esc(formatDate(r.payment_due_date)),
+        esc(formatDate(r.payment_due_date, locale)),
         esc(r.note),
       ].join(","),
     );

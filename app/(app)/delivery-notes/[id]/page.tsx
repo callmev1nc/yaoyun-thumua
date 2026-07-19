@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/request";
 import { formatNumber, formatDate } from "@/lib/number-format";
 import type { DeliveryNote, DeliveryItem } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -22,12 +24,6 @@ import {
 import { ArrowLeft, Printer, Pencil } from "lucide-react";
 import { DeleteDeliveryButton } from "@/components/delete-delivery-button";
 
-const statusLabel: Record<string, string> = {
-  draft: "Nháp",
-  delivered: "Đã giao",
-  cancelled: "Đã huỷ",
-};
-
 export default async function DeliveryNoteDetailPage({
   params,
 }: {
@@ -45,6 +41,11 @@ export default async function DeliveryNoteDetailPage({
     supabase.from("delivery_items").select("*").eq("delivery_note_id", id).order("seq"),
   ]);
   if (!dnRes.data) notFound();
+  const t = await getTranslations("delivery");
+  const ts = await getTranslations("status.dn");
+  const tc = await getTranslations("common");
+  const to = await getTranslations("orders");
+  const locale = await getLocale() as Locale;
   const note = dnRes.data as DeliveryNote & { purchase_orders: { order_code: string; project_code: string | null; po_code: string | null; supplier_company: string | null } };
   const items = (itemsRes.data as DeliveryItem[]) ?? [];
 
@@ -61,23 +62,23 @@ export default async function DeliveryNoteDetailPage({
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">{note.pgh_code || note.delivery_code}</h1>
               <Badge variant={note.status === "delivered" ? "default" : note.status === "cancelled" ? "destructive" : "secondary"}>
-                {statusLabel[note.status] ?? note.status}
+                {ts(note.status) ?? note.status}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Đơn hàng: {note.purchase_orders?.order_code ?? "—"} · {note.purchase_orders?.supplier_company ?? ""}
+              {t("orderSummary", { orderCode: note.purchase_orders?.order_code ?? "—", supplier: note.purchase_orders?.supplier_company ?? "" })}
             </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
             <Link href={`/delivery-notes/${note.id}/edit`}>
-              <Pencil className="mr-2 h-4 w-4" /> Sửa
+              <Pencil className="mr-2 h-4 w-4" /> {tc("edit")}
             </Link>
           </Button>
           <Button asChild variant="outline">
             <Link href={`/print/dn/${note.id}`} target="_blank">
-              <Printer className="mr-2 h-4 w-4" /> In phiếu
+              <Printer className="mr-2 h-4 w-4" /> {tc("print")}
             </Link>
           </Button>
           <DeleteDeliveryButton id={note.id} />
@@ -87,40 +88,40 @@ export default async function DeliveryNoteDetailPage({
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">THÔNG TIN GIAO HÀNG</CardTitle>
+            <CardTitle className="text-base">{t("deliveryInfoTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            <Row label="Khách hàng" value={note.customer_info} />
-            <Row label="Mã dự án" value={note.purchase_orders?.project_code} />
-            <Row label="Mã đơn đặt" value={note.purchase_orders?.po_code} />
-            <Row label="Người chịu trách nhiệm" value={note.responsible_person} />
-            <Row label="SĐT" value={note.responsible_phone} />
+            <Row label={t("customer")} value={note.customer_info} />
+            <Row label={to("projectCode")} value={note.purchase_orders?.project_code} />
+            <Row label={to("orderCode")} value={note.purchase_orders?.po_code} />
+            <Row label={t("responsible")} value={note.responsible_person} />
+            <Row label={t("phone")} value={note.responsible_phone} />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">NGƯỜI NHẬN HÀNG</CardTitle>
+            <CardTitle className="text-base">{t("receiverTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            <Row label="Người nhận" value={note.receiver_name} />
-            <Row label="SĐT" value={note.receiver_phone} />
-            <Row label="Ngày giao" value={formatDate(note.delivery_date)} />
+            <Row label={t("receiver")} value={note.receiver_name} />
+            <Row label={t("phone")} value={note.receiver_phone} />
+            <Row label={t("date")} value={formatDate(note.delivery_date, locale)} />
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Danh mục hàng giao</CardTitle>
+          <CardTitle className="text-base">{t("itemsTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">#</TableHead>
-                <TableHead>交貨項目 / Tên hàng</TableHead>
-                <TableHead className="w-16">單位 DVT</TableHead>
-                <TableHead className="w-24 text-right">數量 SL</TableHead>
+                <TableHead>{t("colProduct")}</TableHead>
+                <TableHead className="w-16">{t("colUnit")}</TableHead>
+                <TableHead className="w-24 text-right">{t("colQty")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -129,7 +130,7 @@ export default async function DeliveryNoteDetailPage({
                   <TableCell className="text-muted-foreground">{it.seq}</TableCell>
                   <TableCell className="font-medium">{it.product_name}</TableCell>
                   <TableCell>{it.unit ?? "—"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatNumber(it.delivered_qty)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{formatNumber(it.delivered_qty, locale)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

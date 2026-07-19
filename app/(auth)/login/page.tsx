@@ -2,15 +2,18 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
+import { LanguageSwitcher } from "@/components/language-switcher"
 
 export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
+  const t = useTranslations("auth")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -23,15 +26,28 @@ export default function LoginPage() {
 
     const loginEmail = email.trim().includes("@") ? email.trim() : `${email.trim()}@yaoyun.vn`
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password,
     })
 
     if (error) {
-      setError(error.message)
+      const map: Record<string, string> = {
+        "Invalid login credentials": t("errInvalidCredentials"),
+      }
+      setError(map[error.message] ?? error.message)
       setLoading(false)
       return
+    }
+
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("preferred_language")
+        .eq("id", data.user.id)
+        .single()
+      const lang = profile?.preferred_language ?? "zh-Hant"
+      document.cookie = `locale=${lang}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
     }
 
     const params = new URLSearchParams(window.location.search)
@@ -45,34 +61,34 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-svh w-full">
-      {/* Left brand panel */}
       <div className="hidden flex-1 flex-col justify-between bg-gradient-to-br from-primary to-blue-700 p-12 text-primary-foreground lg:flex">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="Yaoyun" className="h-10 w-auto" />
           <span className="text-lg font-semibold">Yaoyun Thu Mua</span>
         </div>
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Hệ thống quản lý thu mua</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("systemTitle")}</h1>
           <p className="text-base text-white/70">
-            Theo dõi đơn hàng, giao nhận, thanh toán và đối tác — tập trung một nơi.
+            {t("subtitle")}
           </p>
         </div>
-        <div className="text-sm text-white/50">© 2026 Yaoyun Technology</div>
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-white/50">{t("copyright")}</div>
+          <LanguageSwitcher />
+        </div>
       </div>
 
-      {/* Right form panel */}
       <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-background to-secondary/30 p-6">
         <div className="w-full max-w-sm space-y-6">
-          {/* Mobile header */}
           <div className="flex flex-col items-center gap-2 lg:hidden">
             <img src="/logo.png" alt="Yaoyun" className="h-12 w-auto" />
             <h1 className="text-xl font-semibold">Yaoyun Thu Mua</h1>
-            <p className="text-sm text-muted-foreground">Đăng nhập để tiếp tục</p>
+            <p className="text-sm text-muted-foreground">{t("loginToContinue")}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border bg-card p-6 shadow-sm">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("email")}</Label>
               <Input
                 id="email"
                 type="text"
@@ -85,7 +101,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mật khẩu</Label>
+              <Label htmlFor="password">{t("password")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -105,16 +121,20 @@ export default function LoginPage() {
 
             <Button type="submit" disabled={loading} className="w-full">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Đăng nhập
+              {t("signIn")}
             </Button>
           </form>
 
           <p className="text-center text-xs text-muted-foreground">
-            Chưa có tài khoản?{" "}
+            {t("noAccount")}{" "}
             <a href="mailto:admin@yaoyun.vn" className="underline hover:text-primary">
-              Liên hệ quản trị viên
+              {t("contactAdmin")}
             </a>
           </p>
+
+          <div className="flex justify-center lg:hidden">
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     </div>

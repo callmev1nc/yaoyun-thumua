@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { createProductSchema, updateProductSchema } from "@/lib/validation";
@@ -14,9 +15,10 @@ export async function createProduct(input: {
   note?: string | null;
 }) {
   const parsed = createProductSchema.safeParse(input);
-  if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
+  const t = await getTranslations("errors");
+  if (!parsed.success) return { error: t("invalidData") + ": " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
 
   // Soft-dedup: case-insensitive name match → return existing id.
@@ -59,9 +61,10 @@ export async function updateProduct(
   },
 ) {
   const parsed = updateProductSchema.safeParse(input);
-  if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
+  const t = await getTranslations("errors");
+  if (!parsed.success) return { error: t("invalidData") + ": " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
   const { error } = await supabase
     .from("products")
@@ -81,7 +84,8 @@ export async function updateProduct(
 
 export async function deleteProduct(id: string) {
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  const t = await getTranslations("errors");
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) return { error: error.message };

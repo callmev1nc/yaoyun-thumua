@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { createCustomerSchema, updateCustomerSchema } from "@/lib/validation";
@@ -14,9 +15,10 @@ export async function createCustomer(input: {
   receiver_phone?: string | null;
 }) {
   const parsed = createCustomerSchema.safeParse(input);
-  if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
+  const t = await getTranslations("errors");
+  if (!parsed.success) return { error: t("invalidData") + ": " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
 
   const escapedName = parsed.data.company_name
@@ -73,9 +75,10 @@ export async function updateCustomer(
   },
 ) {
   const parsed = updateCustomerSchema.safeParse(input);
-  if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
+  const t = await getTranslations("errors");
+  if (!parsed.success) return { error: t("invalidData") + ": " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
   const { error } = await supabase
     .from("customers")
@@ -95,7 +98,8 @@ export async function updateCustomer(
 
 export async function deleteCustomer(id: string) {
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  const t = await getTranslations("errors");
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
   const { error } = await supabase.from("customers").delete().eq("id", id);
   if (error) return { error: error.message };

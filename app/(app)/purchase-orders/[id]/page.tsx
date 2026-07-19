@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/request";
 import { formatDong, formatNumber, formatDate } from "@/lib/number-format";
 import type {
   PurchaseOrder,
@@ -37,6 +39,13 @@ export default async function PurchaseOrderDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const locale = await getLocale() as Locale;
+  const t = await getTranslations("orders");
+  const tc = await getTranslations("common");
+  const td = await getTranslations("delivery");
+  const tsp = await getTranslations("suppliers");
+  const tcu = await getTranslations("customers");
+  const tpay = await getTranslations("status.payment");
 
   const [orderRes, itemsRes, payRes] = await Promise.all([
     supabase.from("purchase_orders").select("*").eq("id", id).single(),
@@ -93,17 +102,17 @@ export default async function PurchaseOrderDetailPage({
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
             <Link href={`/purchase-orders/${po.id}/edit`}>
-              <Pencil className="mr-2 h-4 w-4" /> Sửa
+              <Pencil className="mr-2 h-4 w-4" /> {tc("edit")}
             </Link>
           </Button>
           <Button asChild variant="outline">
             <Link href={`/delivery-notes/new?orderId=${po.id}`}>
-              <Truck className="mr-2 h-4 w-4" /> Tạo phiếu giao hàng
+              <Truck className="mr-2 h-4 w-4" /> {td("create")}
             </Link>
           </Button>
           <Button asChild variant="outline">
             <Link href={`/print/po/${po.id}`} target="_blank">
-              <Printer className="mr-2 h-4 w-4" /> In đơn
+              <Printer className="mr-2 h-4 w-4" /> {t("print")}
             </Link>
           </Button>
           <DuplicateOrderButton id={po.id} />
@@ -114,25 +123,25 @@ export default async function PurchaseOrderDetailPage({
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Nhà cung cấp</CardTitle>
+            <CardTitle className="text-base">{tsp("title")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            <Row label="Công ty" value={po.supplier_company} />
-            <Row label="Người phụ trách" value={po.supplier_contact} />
-            <Row label="SĐT" value={po.supplier_phone} />
-            <Row label="Khách hàng" value={po.customer_company} />
-            <Row label="Mã dự án" value={po.project_code} />
-            <Row label="Mã đơn đặt" value={po.po_code} />
+            <Row label={t("company")} value={po.supplier_company} />
+            <Row label={t("contact")} value={po.supplier_contact} />
+            <Row label={t("supplierPhone")} value={po.supplier_phone} />
+            <Row label={tcu("title")} value={po.customer_company} />
+            <Row label={t("projectCode")} value={po.project_code} />
+            <Row label={t("orderCode")} value={po.po_code} />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Người nhận hàng</CardTitle>
+            <CardTitle className="text-base">{t("receiver")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            <Row label="Người nhận" value={po.receiver_name} />
-            <Row label="SĐT" value={po.receiver_phone} />
-            <Row label="Địa chỉ" value={po.receiver_address} />
+            <Row label={t("receiver")} value={po.receiver_name} />
+            <Row label={t("receiverPhone")} value={po.receiver_phone} />
+            <Row label={t("deliveryAddress")} value={po.receiver_address} />
           </CardContent>
         </Card>
       </div>
@@ -140,7 +149,7 @@ export default async function PurchaseOrderDetailPage({
       {/* Items with delivered/remaining (Mục 2 detail) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Danh mục thu mua — chi tiết giao</CardTitle>
+          <CardTitle className="text-base">{t("itemsDetail")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -148,13 +157,13 @@ export default async function PurchaseOrderDetailPage({
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">#</TableHead>
-                  <TableHead>Sản phẩm</TableHead>
-                  <TableHead className="w-16">DVT</TableHead>
-                  <TableHead className="text-right">SL đặt</TableHead>
-                  <TableHead className="text-right">Đã giao</TableHead>
-                  <TableHead className="text-right">Còn lại</TableHead>
-                  <TableHead className="text-right">Đơn giá</TableHead>
-                  <TableHead className="text-right">Thành tiền</TableHead>
+                  <TableHead>{t("product")}</TableHead>
+                  <TableHead className="w-16">{t("unit")}</TableHead>
+                  <TableHead className="text-right">{t("qtyOrdered")}</TableHead>
+                  <TableHead className="text-right">{t("delivered")}</TableHead>
+                  <TableHead className="text-right">{t("remaining")}</TableHead>
+                  <TableHead className="text-right">{t("unitPrice")}</TableHead>
+                  <TableHead className="text-right">{t("lineTotal")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -166,24 +175,26 @@ export default async function PurchaseOrderDetailPage({
                       <TableCell className="text-muted-foreground">{it.seq}</TableCell>
                       <TableCell className="font-medium">{it.product_name}</TableCell>
                       <TableCell>{it.unit ?? "—"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatNumber(it.quantity)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatNumber(it.quantity, locale)}</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {formatNumber(delivered)}
+                        {formatNumber(delivered, locale)}
                         {delivered > 0 && (
                           <Badge variant="secondary" className="ml-2">
-                            {remaining <= 0 ? "đủ" : `${formatNumber(remaining)} còn`}
+                            {remaining <= 0
+                              ? t("fullyDelivered")
+                              : t("remainingCount", { count: formatNumber(remaining, locale) })}
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {remaining < 0 ? (
-                          <span className="text-destructive">{formatNumber(remaining)} (thừa)</span>
+                          <span className="text-destructive">{t("excess", { count: formatNumber(remaining, locale) })}</span>
                         ) : (
-                          formatNumber(remaining)
+                          formatNumber(remaining, locale)
                         )}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{formatNumber(it.unit_price)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatDong(it.line_total)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatNumber(it.unit_price, locale)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatDong(it.line_total, locale)}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -192,10 +203,10 @@ export default async function PurchaseOrderDetailPage({
           </div>
 
           <div className="ml-auto mt-4 w-full max-w-xs rounded-lg border border-primary/20 bg-primary/[0.03] p-3 text-sm">
-            <Total label="Tổng chưa thuế" value={formatDong(po.subtotal_ex_vat)} />
-            <Total label="Tiền thuế (VAT)" value={formatDong(po.vat_total)} />
+            <Total label={t("totalExclVat")} value={formatDong(po.subtotal_ex_vat, locale)} />
+            <Total label={t("vatTotal")} value={formatDong(po.vat_total, locale)} />
             <Separator className="my-1" />
-            <Total label="Tổng gồm thuế" value={formatDong(po.grand_total)} strong />
+            <Total label={t("totalInclVat")} value={formatDong(po.grand_total, locale)} strong />
           </div>
         </CardContent>
       </Card>
@@ -203,7 +214,7 @@ export default async function PurchaseOrderDetailPage({
       {/* Payment schedule */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Thanh toán (4 đợt)</CardTitle>
+          <CardTitle className="text-base">{t("paymentSchedule", { count: payRows.length })}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {payRows.length > 0 && (
@@ -213,8 +224,8 @@ export default async function PurchaseOrderDetailPage({
                 return (
                   <>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Đã thanh toán</span>
-                      <span className="font-medium tabular-nums">{formatNumber(paidPct)}%</span>
+                      <span className="text-muted-foreground">{t("paidProgress")}</span>
+                      <span className="font-medium tabular-nums">{formatNumber(paidPct, locale)}%</span>
                     </div>
                     <Progress value={paidPct} className="h-2.5" />
                   </>
@@ -225,39 +236,39 @@ export default async function PurchaseOrderDetailPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">Đợt</TableHead>
-                <TableHead className="text-right">Tỷ lệ</TableHead>
-                <TableHead className="text-right">Số tiền</TableHead>
-                <TableHead>Ngày dự kiến</TableHead>
-                <TableHead>Trạng thái</TableHead>
-                <TableHead>Ngày chi</TableHead>
+                <TableHead className="w-12">{t("installment")}</TableHead>
+                <TableHead className="text-right">{t("percent")}</TableHead>
+                <TableHead className="text-right">{t("amount")}</TableHead>
+                <TableHead>{t("plannedDate")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead>{t("paymentDate")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {payRows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">Chưa có lịch thanh toán.</TableCell>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("paymentEmpty")}</TableCell>
                 </TableRow>
               )}
               {payRows.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>{p.installment_no}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatNumber(p.percent)}%</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatDong(p.amount)}</TableCell>
-                  <TableCell>{formatDate(p.planned_date)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{formatNumber(p.percent, locale)}%</TableCell>
+                  <TableCell className="text-right tabular-nums">{formatDong(p.amount, locale)}</TableCell>
+                  <TableCell>{formatDate(p.planned_date, locale)}</TableCell>
                   <TableCell>
                     <Badge
                       variant={p.status === "paid" ? "default" : "secondary"}
                       className={p.status === "paid" ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100" : ""}
                     >
                       {p.status === "paid" ? (
-                        <><CheckCircle2 className="mr-1 h-3 w-3" /> Đã chi</>
+                        <><CheckCircle2 className="mr-1 h-3 w-3" /> {tpay("paid")}</>
                       ) : (
-                        <><Clock className="mr-1 h-3 w-3" /> Chưa chi</>
+                        <><Clock className="mr-1 h-3 w-3" /> {tpay("unpaid")}</>
                       )}
                     </Badge>
                   </TableCell>
-                  <TableCell>{formatDate(p.paid_date)}</TableCell>
+                  <TableCell>{formatDate(p.paid_date, locale)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { installmentAmount } from "@/lib/calc";
@@ -83,10 +84,11 @@ async function nextPoCode(
 
 export async function createOrder(input: CreateOrderInput) {
   const parsed = createOrderSchema.safeParse(input);
-  if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
+  const t = await getTranslations("errors");
+  if (!parsed.success) return { error: t("invalidData") + ": " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
-  if (!input.items.length) return { error: "Phải có ít nhất 1 dòng sản phẩm" };
+  if (!ctx) return { error: t("notLoggedIn") };
+  if (!input.items.length) return { error: t("needOneItem") };
 
   const supabase = await createClient();
   const year = new Date().getFullYear();
@@ -144,7 +146,7 @@ export async function createOrder(input: CreateOrderInput) {
     .eq("id", order!.id)
     .single();
   if (!fresh) {
-    return { error: "Lỗi tính tổng đơn, vui lòng thử lại" };
+    return { error: t("calcError") };
   }
   const grandTotal = fresh.grand_total;
 
@@ -173,7 +175,8 @@ export async function createOrder(input: CreateOrderInput) {
 
 export async function deleteOrder(id: string) {
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  const t = await getTranslations("errors");
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
   const { error } = await supabase.from("purchase_orders").delete().eq("id", id);
   if (error) return { error: error.message };
@@ -183,7 +186,8 @@ export async function deleteOrder(id: string) {
 
 export async function duplicateOrder(id: string) {
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  const t = await getTranslations("errors");
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
 
   const { data: orig } = await supabase
@@ -191,7 +195,7 @@ export async function duplicateOrder(id: string) {
     .select("*")
     .eq("id", id)
     .single();
-  if (!orig) return { error: "Không tìm thấy đơn hàng" };
+  if (!orig) return { error: t("orderNotFound") };
 
   const { data: origItems } = await supabase
     .from("order_items")
@@ -264,7 +268,7 @@ export async function duplicateOrder(id: string) {
     .eq("id", order.id)
     .single();
   if (!fresh) {
-    return { error: "Lỗi tính tổng đơn, vui lòng thử lại" };
+    return { error: t("calcError") };
   }
 
   if (payments.length) {
@@ -292,9 +296,10 @@ export async function duplicateOrder(id: string) {
 
 export async function updateOrder(id: string, input: CreateOrderInput) {
   const parsed = updateOrderSchema.safeParse(input);
-  if (!parsed.success) return { error: "Dữ liệu không hợp lệ" };
+  const t = await getTranslations("errors");
+  if (!parsed.success) return { error: t("invalidData") };
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
 
   const projectCode = input.project_code?.trim() || null;
@@ -339,7 +344,7 @@ export async function updateOrder(id: string, input: CreateOrderInput) {
         const { data: delData } = await supabase.rpc("delivered_total", { p_order_item_id: oid });
         const delivered = Number(delData) || 0;
         if (delivered > 0) {
-          return { error: "Không thể xoá dòng đã giao hàng. Đặt số lượng về 0 hoặc huỷ phiếu giao trước." };
+          return { error: t("cannotDeleteDeliveredRow") };
         }
         await supabase.from("order_items").delete().eq("id", oid);
       }

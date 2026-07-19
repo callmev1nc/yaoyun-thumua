@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/request";
 import { formatNumber, formatDong, formatDate } from "@/lib/number-format";
 import type { LedgerRow } from "@/types/db";
 import { Input } from "@/components/ui/input";
@@ -38,6 +40,9 @@ export default async function LedgerPage({
   const orderFilter = sp.order?.trim() ?? "";
 
   const supabase = await createClient();
+  const t = await getTranslations("ledger");
+  const tc = await getTranslations("common");
+  const locale = await getLocale() as Locale;
 
   let query = supabase
     .from("ledger")
@@ -77,14 +82,14 @@ export default async function LedgerPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Bảng tính tiền</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Bảng tổng hợp các đơn hàng (Form 3)
+            {t("subtitle")}
           </p>
         </div>
         <Button asChild>
           <a href={`/api/ledger/csv?${csvParams}`}>
-            <Download className="mr-2 h-4 w-4" /> Export CSV
+            <Download className="mr-2 h-4 w-4" /> {tc("exportCsv")}
           </a>
         </Button>
       </div>
@@ -94,7 +99,7 @@ export default async function LedgerPage({
         method="GET"
       >
         <div className="space-y-1">
-          <Label htmlFor="from">Từ ngày</Label>
+          <Label htmlFor="from">{t("fromDate")}</Label>
           <Input
             id="from"
             name="from"
@@ -104,7 +109,7 @@ export default async function LedgerPage({
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="to">Đến ngày</Label>
+          <Label htmlFor="to">{t("toDate")}</Label>
           <Input
             id="to"
             name="to"
@@ -114,13 +119,13 @@ export default async function LedgerPage({
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="company">Công ty (NCC)</Label>
+          <Label htmlFor="company">{t("company")}</Label>
           <Input
             id="company"
             name="company"
             list="company-list"
             defaultValue={companyFilter}
-            placeholder="Lọc theo NCC…"
+            placeholder={t("filterSupplier")}
             className="w-56"
           />
           <datalist id="company-list">
@@ -130,43 +135,43 @@ export default async function LedgerPage({
           </datalist>
         </div>
         <div className="space-y-1">
-          <Label htmlFor="order">Đơn hàng</Label>
+          <Label htmlFor="order">{t("col.order")}</Label>
           <Input
             id="order"
             name="order"
             defaultValue={orderFilter}
-            placeholder="Mã đơn…"
+            placeholder={t("filterCode")}
             className="w-40"
           />
         </div>
         <Button type="submit" variant="default">
-          Lọc
+          {tc("filter")}
         </Button>
       </form>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tổng số dòng</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("totalRows")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{formatNumber(totalItems)}</p>
+            <p className="text-2xl font-semibold tabular-nums">{formatNumber(totalItems, locale)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Σ Thành tiền</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("sumAmount")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{formatDong(sumTotal)}</p>
+            <p className="text-2xl font-semibold tabular-nums">{formatDong(sumTotal, locale)}</p>
           </CardContent>
         </Card>
         <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-primary">SỐ TIỀN CẦN CHI</CardTitle>
+            <CardTitle className="text-sm font-semibold text-primary">{t("amountToPay")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold tabular-nums text-primary">{formatDong(sumNeedPay)}</p>
+            <p className="text-2xl font-bold tabular-nums text-primary">{formatDong(sumNeedPay, locale)}</p>
           </CardContent>
         </Card>
       </div>
@@ -175,43 +180,43 @@ export default async function LedgerPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="whitespace-nowrap">Ngày tạo</TableHead>
-              <TableHead className="whitespace-nowrap">Ngày giao</TableHead>
-              <TableHead className="whitespace-nowrap">Công ty</TableHead>
-              <TableHead className="whitespace-nowrap">Đơn hàng</TableHead>
-              <TableHead className="whitespace-nowrap">Mã dự án</TableHead>
-              <TableHead className="whitespace-nowrap">Tên SP</TableHead>
-              <TableHead className="w-14">DVT</TableHead>
-              <TableHead className="text-right">SL</TableHead>
-              <TableHead className="text-right">Đơn giá</TableHead>
-              <TableHead className="text-right">Thành tiền</TableHead>
-              <TableHead className="text-right">Còn lại</TableHead>
-              <TableHead className="whitespace-nowrap">Ngày DK thanh toán</TableHead>
-              <TableHead>Ghi chú</TableHead>
+              <TableHead className="whitespace-nowrap">{t("col.createdAt")}</TableHead>
+              <TableHead className="whitespace-nowrap">{t("col.deliveredAt")}</TableHead>
+              <TableHead className="whitespace-nowrap">{t("col.company")}</TableHead>
+              <TableHead className="whitespace-nowrap">{t("col.order")}</TableHead>
+              <TableHead className="whitespace-nowrap">{t("col.projectCode")}</TableHead>
+              <TableHead className="whitespace-nowrap">{t("col.product")}</TableHead>
+              <TableHead className="w-14">{t("col.unit")}</TableHead>
+              <TableHead className="text-right">{t("col.qty")}</TableHead>
+              <TableHead className="text-right">{t("col.unitPrice")}</TableHead>
+              <TableHead className="text-right">{t("col.amount")}</TableHead>
+              <TableHead className="text-right">{t("col.remaining")}</TableHead>
+              <TableHead className="whitespace-nowrap">{t("col.paymentDue")}</TableHead>
+              <TableHead>{t("col.note")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 && (
               <EmptyState
-                title="Không có dữ liệu"
-                description="Thử thay đổi bộ lọc hoặc tạo đơn hàng mới."
+                title={tc("empty")}
+                description={t("emptyHint")}
                 colSpan={13}
               />
             )}
             {rows.map((r, i) => (
               <TableRow key={`${r.order_id}-${r.product_name}-${i}`}>
-                <TableCell className="whitespace-nowrap text-xs">{formatDate(r.created_at)}</TableCell>
-                <TableCell className="whitespace-nowrap text-xs">{formatDate(r.delivery_date)}</TableCell>
+                <TableCell className="whitespace-nowrap text-xs">{formatDate(r.created_at, locale)}</TableCell>
+                <TableCell className="whitespace-nowrap text-xs">{formatDate(r.delivery_date, locale)}</TableCell>
                 <TableCell className="whitespace-nowrap">{r.company ?? "—"}</TableCell>
                 <TableCell className="whitespace-nowrap font-medium">{r.po_code ?? r.order_code}</TableCell>
                 <TableCell className="whitespace-nowrap">{r.project_code ?? "—"}</TableCell>
                 <TableCell>{r.product_name}</TableCell>
                 <TableCell>{r.unit ?? "—"}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatNumber(r.quantity)}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatNumber(r.unit_price)}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatDong(r.line_total)}</TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{formatDong(r.order_remaining)}</TableCell>
-                <TableCell className="whitespace-nowrap text-xs">{formatDate(r.payment_due_date)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatNumber(r.quantity, locale)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatNumber(r.unit_price, locale)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatDong(r.line_total, locale)}</TableCell>
+                <TableCell className="text-right tabular-nums font-medium">{formatDong(r.order_remaining, locale)}</TableCell>
+                <TableCell className="whitespace-nowrap text-xs">{formatDate(r.payment_due_date, locale)}</TableCell>
                 <TableCell className="max-w-40 truncate text-xs text-muted-foreground" title={r.note ?? ""}>
                   {r.note ?? ""}
                 </TableCell>

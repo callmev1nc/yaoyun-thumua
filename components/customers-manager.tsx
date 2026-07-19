@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, Boxes } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
@@ -35,6 +36,12 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
   const [receiverPhone, setReceiverPhone] = useState("");
   const [pending, startTransition] = useTransition();
 
+  const t = useTranslations("customers");
+  const tc = useTranslations("common");
+  const tt = useTranslations("toasts");
+  const tcf = useTranslations("confirm");
+  const te = useTranslations("errors");
+
   function reset() {
     setEditing(null);
     setCompany("");
@@ -60,7 +67,7 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!company.trim()) {
-      toast.error("Nhập tên công ty");
+      toast.error(te("companyRequired"));
       return;
     }
     startTransition(async () => {
@@ -79,7 +86,7 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
           });
       if (res?.error) toast.error(res.error);
       else {
-        toast.success(editing ? "Đã cập nhật" : "Đã thêm khách hàng");
+        toast.success(editing ? tt("updated") : tt("created"));
         setOpen(false);
         reset();
       }
@@ -87,11 +94,11 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
   }
 
   function remove(c: Customer) {
-    if (!confirm(`Xoá khách hàng "${c.company_name}"?`)) return;
+    if (!confirm(tcf("deleteCustomer", { name: c.company_name }))) return;
     startTransition(async () => {
       const res = await deleteCustomer(c.id);
       if (res?.error) toast.error(res.error);
-      else toast.success("Đã xoá");
+      else toast.success(tt("deleted"));
     });
   }
 
@@ -101,25 +108,25 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
           <DialogTrigger asChild>
             <Button onClick={openAdd}>
-              <Plus className="mr-2 h-4 w-4" /> Thêm khách hàng
+              <Plus className="mr-2 h-4 w-4" /> {t("add")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editing ? "Sửa khách hàng" : "Thêm khách hàng"}</DialogTitle>
+              <DialogTitle>{editing ? tc("edit") + " " + t("title") : t("add")}</DialogTitle>
             </DialogHeader>
             <form onSubmit={submit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="company">Tên công ty *</Label>
+                <Label htmlFor="company">{t("company")} *</Label>
                 <Input id="company" value={company} onChange={(e) => setCompany(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address">Địa chỉ</Label>
+                <Label htmlFor="address">{t("address")}</Label>
                 <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="receiverName">Người nhận</Label>
+                  <Label htmlFor="receiverName">{t("receiver")}</Label>
                   <Input
                     id="receiverName"
                     value={receiverName}
@@ -127,7 +134,7 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="receiverPhone">SĐT người nhận</Label>
+                  <Label htmlFor="receiverPhone">{t("receiverPhone")}</Label>
                   <Input
                     id="receiverPhone"
                     value={receiverPhone}
@@ -138,7 +145,7 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
               <DialogFooter>
                 <Button type="submit" disabled={pending}>
                   {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Lưu
+                  {tc("save")}
                 </Button>
               </DialogFooter>
             </form>
@@ -150,19 +157,19 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tên công ty</TableHead>
-              <TableHead>Người nhận</TableHead>
-              <TableHead>SĐT người nhận</TableHead>
-              <TableHead>Địa chỉ</TableHead>
-              <TableHead className="w-[100px] text-right">Thao tác</TableHead>
+              <TableHead>{t("company")}</TableHead>
+              <TableHead>{t("receiver")}</TableHead>
+              <TableHead>{t("receiverPhone")}</TableHead>
+              <TableHead>{t("address")}</TableHead>
+              <TableHead className="w-[100px] text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 && (
               <EmptyState
                 icon={Boxes}
-                title="Chưa có khách hàng nào"
-                description="Thêm khách hàng đầu tiên để bắt đầu."
+                title={t("empty")}
+                description={t("emptyDescription")}
                 colSpan={5}
               />
             )}
@@ -173,10 +180,10 @@ export function CustomersManager({ customers }: { customers: Customer[] }) {
                 <TableCell>{c.receiver_phone || "—"}</TableCell>
                 <TableCell>{c.address || "—"}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(c)} title="Sửa" aria-label="Sửa khách hàng">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(c)} title={tc("edit")} aria-label={tc("edit") + " " + t("title")}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(c)} title="Xoá" aria-label="Xoá khách hàng">
+                  <Button variant="ghost" size="icon" onClick={() => remove(c)} title={tc("delete")} aria-label={tc("delete") + " " + t("title")}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TableCell>

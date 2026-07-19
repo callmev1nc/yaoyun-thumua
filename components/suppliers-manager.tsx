@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, Building2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
@@ -35,6 +36,12 @@ export function SuppliersManager({ suppliers }: { suppliers: Supplier[] }) {
   const [phone, setPhone] = useState("");
   const [pending, startTransition] = useTransition();
 
+  const t = useTranslations("suppliers");
+  const tc = useTranslations("common");
+  const tt = useTranslations("toasts");
+  const tcf = useTranslations("confirm");
+  const tv = useTranslations("validation");
+
   function reset() {
     setEditing(null);
     setCompany("");
@@ -58,7 +65,7 @@ export function SuppliersManager({ suppliers }: { suppliers: Supplier[] }) {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!company.trim()) {
-      toast.error("Nhập tên công ty");
+      toast.error(tv("companyName"));
       return;
     }
     startTransition(async () => {
@@ -75,7 +82,7 @@ export function SuppliersManager({ suppliers }: { suppliers: Supplier[] }) {
           });
       if (res?.error) toast.error(res.error);
       else {
-        toast.success(editing ? "Đã cập nhật" : "Đã thêm NCC");
+        toast.success(editing ? tt("updated") : tt("created"));
         setOpen(false);
         reset();
       }
@@ -83,11 +90,11 @@ export function SuppliersManager({ suppliers }: { suppliers: Supplier[] }) {
   }
 
   function remove(s: Supplier) {
-    if (!confirm(`Xoá NCC "${s.company_name}"?`)) return;
+    if (!confirm(tcf("deleteSupplier", { name: s.company_name }))) return;
     startTransition(async () => {
       const res = await deleteSupplier(s.id);
       if (res?.error) toast.error(res.error);
-      else toast.success("Đã xoá");
+      else toast.success(tt("deleted"));
     });
   }
 
@@ -97,31 +104,31 @@ export function SuppliersManager({ suppliers }: { suppliers: Supplier[] }) {
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
           <DialogTrigger asChild>
             <Button onClick={openAdd}>
-              <Plus className="mr-2 h-4 w-4" /> Thêm nhà cung cấp
+              <Plus className="mr-2 h-4 w-4" /> {t("add")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editing ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"}</DialogTitle>
-              <DialogDescription>Thông tin sẽ dùng khi tạo đơn đặt hàng.</DialogDescription>
+              <DialogTitle>{editing ? tc("edit") + " " + t("title") : t("add")}</DialogTitle>
+              <DialogDescription>{t("dialogDescription")}</DialogDescription>
             </DialogHeader>
             <form onSubmit={submit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="company">Tên công ty *</Label>
+                <Label htmlFor="company">{t("company")} *</Label>
                 <Input id="company" value={company} onChange={(e) => setCompany(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact">Người phụ trách</Label>
+                <Label htmlFor="contact">{t("contact")}</Label>
                 <Input id="contact" value={contact} onChange={(e) => setContact(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">SĐT</Label>
+                <Label htmlFor="phone">{t("phone")}</Label>
                 <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={pending}>
                   {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Lưu
+                  {tc("save")}
                 </Button>
               </DialogFooter>
             </form>
@@ -133,18 +140,18 @@ export function SuppliersManager({ suppliers }: { suppliers: Supplier[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tên công ty</TableHead>
-              <TableHead>Người phụ trách</TableHead>
-              <TableHead>SĐT</TableHead>
-              <TableHead className="w-[100px] text-right">Thao tác</TableHead>
+              <TableHead>{t("company")}</TableHead>
+              <TableHead>{t("contact")}</TableHead>
+              <TableHead>{t("phone")}</TableHead>
+              <TableHead className="w-[100px] text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {suppliers.length === 0 && (
               <EmptyState
                 icon={Building2}
-                title="Chưa có nhà cung cấp nào"
-                description="Thêm nhà cung cấp đầu tiên để bắt đầu."
+                title={t("empty")}
+                description={t("emptyHint")}
                 colSpan={4}
               />
             )}
@@ -154,10 +161,10 @@ export function SuppliersManager({ suppliers }: { suppliers: Supplier[] }) {
                 <TableCell>{s.contact_person || "—"}</TableCell>
                 <TableCell>{s.phone || "—"}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(s)} title="Sửa" aria-label="Sửa nhà cung cấp">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(s)} title={tc("edit")} aria-label={tc("edit") + " " + t("title")}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(s)} title="Xoá" aria-label="Xoá nhà cung cấp">
+                  <Button variant="ghost" size="icon" onClick={() => remove(s)} title={tc("delete")} aria-label={tc("delete") + " " + t("title")}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TableCell>

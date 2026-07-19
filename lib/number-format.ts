@@ -1,31 +1,20 @@
-/** Vietnamese number / currency / date formatting helpers. */
+import type { Locale } from "@/i18n/request";
 
-const numberFmt = new Intl.NumberFormat("vi-VN")
-const currencyFmt = new Intl.NumberFormat("vi-VN", {
-  style: "currency",
-  currency: "VND",
-  maximumFractionDigits: 0,
-})
-
-/** 8120000 -> "8.120.000" */
-export function formatNumber(n: number | null | undefined): string {
+export function formatNumber(n: number | null | undefined, locale: Locale = "zh-Hant"): string {
   if (n == null || !Number.isFinite(n)) return "0"
-  return numberFmt.format(n)
+  return new Intl.NumberFormat(locale).format(n)
 }
 
-/** 8120000 -> "8.120.000 ₫" */
-export function formatVND(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return currencyFmt.format(0)
-  return currencyFmt.format(n)
+export function formatVND(n: number | null | undefined, locale: Locale = "zh-Hant"): string {
+  if (n == null || !Number.isFinite(n)) return formatDong(0, locale)
+  return formatDong(n, locale)
 }
 
-/** Plain number with a trailing " đ" — used inside table cells. */
-export function formatDong(n: number | null | undefined): string {
-  return `${formatNumber(n)} đ`
+export function formatDong(n: number | null | undefined, locale: Locale = "zh-Hant"): string {
+  return `${formatNumber(n, locale)} ₫`
 }
 
-/** "2026-07-15" | Date -> "15/07/2026". Empty/null -> "". */
-export function formatDate(input: string | Date | null | undefined): string {
+export function formatDate(input: string | Date | null | undefined, locale: Locale = "zh-Hant"): string {
   if (!input) return ""
   let d: Date
   if (typeof input === "string") {
@@ -39,38 +28,22 @@ export function formatDate(input: string | Date | null | undefined): string {
     d = input
   }
   if (Number.isNaN(d.getTime())) return ""
-  const dd = String(d.getDate()).padStart(2, "0")
-  const mm = String(d.getMonth() + 1).padStart(2, "0")
-  const yyyy = d.getFullYear()
-  return `${dd}/${mm}/${yyyy}`
+  if (locale === "vi") {
+    const dd = String(d.getDate()).padStart(2, "0")
+    const mm = String(d.getMonth() + 1).padStart(2, "0")
+    return `${dd}/${mm}/${d.getFullYear()}`
+  }
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
 }
 
-/**
- * Parse a user-typed numeric string that may use Vietnamese conventions
- * (dot thousands separator, comma decimal). Returns NaN if unparseable.
- */
-export function parseLooseNumber(raw: string): number {
+export function parseLooseNumber(raw: string, locale: Locale = "zh-Hant"): number {
   if (raw == null) return NaN
   const s = String(raw).trim().replace(/\s/g, "")
   if (s === "") return NaN
-  // Treat the LAST ',' (or '.') as decimal sep following vi convention.
-  const hasComma = s.includes(",")
-  const hasDot = s.includes(".")
-  let normalized = s.replace(/[^\d.,-]/g, "")
-  if (hasComma && hasDot) {
-    // dots = thousands, comma = decimal
-    normalized = normalized.replace(/\./g, "").replace(",", ".")
-  } else if (hasComma) {
-    normalized = normalized.replace(/\./g, "").replace(",", ".")
-  } else if (hasDot) {
-    const dots = (s.match(/\./g) || []).length
-    const groups = s.split(".").map(g => g.length)
-    // Single dot followed by exactly 3 digits → thousands separator (VND convention)
-    if (dots === 1 && groups.length === 2 && groups[1] === 3) {
-      normalized = normalized.replace(/\./g, "")
-    } else if (dots > 1) {
-      normalized = normalized.replace(/\./g, "")
-    }
+  if (locale === "vi") {
+    const normalized = s.replace(/\./g, "").replace(",", ".")
+    return Number(normalized) || 0
   }
-  return Number(normalized)
+  const normalized = s.replace(/,/g, "")
+  return Number(normalized) || 0
 }

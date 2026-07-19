@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { DeliveryNote, DeliveryItem } from "@/types/db";
 import { formatNumber, formatDate } from "@/lib/number-format";
+import type { Locale } from "@/i18n/request";
 
 export function PrintDeliveryNote({
   note,
@@ -10,12 +11,20 @@ export function PrintDeliveryNote({
   orderCode,
   projectCode,
   poCode,
+  tCn,
+  tVn,
+  locale,
 }: {
   note: DeliveryNote;
   items: DeliveryItem[];
   orderCode?: string | null;
   projectCode?: string | null;
   poCode?: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tCn: (key: string, values?: Record<string, any>) => string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tVn: (key: string, values?: Record<string, any>) => string;
+  locale: Locale;
 }) {
   useEffect(() => {
     const t = setTimeout(() => window.print(), 300);
@@ -25,63 +34,60 @@ export function PrintDeliveryNote({
   return (
     <div className="print-page">
       <div className="pp-inner">
-        {/* Header */}
         <div className="pp-header">
-          <img src="/forms/logo.png" alt="logo" className="pp-logo" />
+          <img src="/forms/logo.png" alt={tCn("logoAlt")} className="pp-logo" />
           <div className="pp-company">
-            <div className="pp-cn">曜雲科技有限公司</div>
-            <div>CÔNG TY TNHH CÔNG NGHỆ YAOYUN</div>
+            <div className="pp-cn">{tCn("company")}</div>
+            <div>{tVn("company")}</div>
           </div>
           <div className="pp-title">
-            <div className="pp-title-cn">交貨單</div>
-            <div className="pp-title-vn">PHIẾU GIAO HÀNG</div>
+            <div className="pp-title-cn">{tCn("dn.title")}</div>
+            <div className="pp-title-vn">{tVn("dn.title")}</div>
           </div>
         </div>
 
-        {/* Info block */}
         <table className="pp-info">
           <tbody>
             <tr>
-              <td className="pp-label">交貨資訊 / THÔNG TIN GIAO HÀNG</td>
+              <td className="pp-label">{tCn("info.delivery")} / {tVn("info.delivery")}</td>
               <td className="pp-val" colSpan={3}>
                 {note.customer_info ?? ""}
               </td>
             </tr>
             <tr>
-              <td className="pp-label">負責人 / NGƯỜI CHỊU TRÁCH NHIỆM</td>
+              <td className="pp-label">{tCn("info.owner")} / {tVn("info.owner")}</td>
               <td className="pp-val">{note.responsible_person ?? ""}</td>
-              <td className="pp-label">電話 / SĐT</td>
+              <td className="pp-label">{tCn("info.phone")} / {tVn("info.phone")}</td>
               <td className="pp-val">{note.responsible_phone ?? ""}</td>
             </tr>
             <tr>
-              <td className="pp-label">收貨人 / NGƯỜI NHẬN</td>
+              <td className="pp-label">{tCn("info.receiver")} / {tVn("info.receiver")}</td>
               <td className="pp-val">{note.receiver_name ?? ""}</td>
-              <td className="pp-label">電話 / SĐT</td>
+              <td className="pp-label">{tCn("info.phone")} / {tVn("info.phone")}</td>
               <td className="pp-val">{note.receiver_phone ?? ""}</td>
             </tr>
             <tr>
-              <td className="pp-label">交貨單號 / MÃ PHIẾU GIAO</td>
+              <td className="pp-label">{tCn("info.dnCode")} / {tVn("info.dnCode")}</td>
               <td className="pp-val">{note.pgh_code || note.delivery_code}</td>
-              <td className="pp-label">交貨日期 / NGÀY GIAO</td>
-              <td className="pp-val">{formatDate(note.delivery_date)}</td>
+              <td className="pp-label">{tCn("info.deliveryDate")} / {tVn("info.deliveryDate")}</td>
+              <td className="pp-val">{formatDate(note.delivery_date, locale)}</td>
             </tr>
             <tr>
-              <td className="pp-label">專案代碼 / MÃ DỰ ÁN</td>
+              <td className="pp-label">{tCn("info.projectCode")} / {tVn("info.projectCode")}</td>
               <td className="pp-val">{projectCode ?? ""}</td>
-              <td className="pp-label">訂單代碼 / MÃ ĐƠN ĐẶT</td>
+              <td className="pp-label">{tCn("info.orderCode")} / {tVn("info.orderCode")}</td>
               <td className="pp-val">{poCode ?? ""}</td>
             </tr>
           </tbody>
         </table>
 
-        {/* Items - NO PRICE columns */}
         <table className="pp-items">
           <thead>
             <tr>
-              <th style={{ width: "8%" }}>序<br />TT</th>
-              <th style={{ width: "52%" }}>交貨項目 / Tên hàng</th>
-              <th style={{ width: "15%" }}>單位<br />DVT</th>
-              <th style={{ width: "25%" }}>數量<br />SL</th>
+              <th style={{ width: "8%" }}>{tCn("col.no")}<br />{tVn("col.no")}</th>
+              <th style={{ width: "52%" }}>{tCn("col.product")} / {tVn("col.product")}</th>
+              <th style={{ width: "15%" }}>{tCn("col.unit")}<br />{tVn("col.unit")}</th>
+              <th style={{ width: "25%" }}>{tCn("col.qty")}<br />{tVn("col.qty")}</th>
             </tr>
           </thead>
           <tbody>
@@ -90,7 +96,7 @@ export function PrintDeliveryNote({
                 <td className="center">{it.seq}</td>
                 <td>{it.product_name}</td>
                 <td className="center">{it.unit ?? ""}</td>
-                <td className="right">{formatNumber(it.delivered_qty)}</td>
+                <td className="right">{formatNumber(it.delivered_qty, locale)}</td>
               </tr>
             ))}
             {items.length === 0 && Array.from({ length: 8 }).map((_, i) => (
@@ -104,22 +110,20 @@ export function PrintDeliveryNote({
           </tbody>
         </table>
 
-        {/* Note bar */}
         <div className="pp-note-bar">
-          <span className="pp-note-label">備註 / GHI CHÚ</span>
+          <span className="pp-note-label">{tCn("info.note")} / {tVn("info.note")}</span>
           <span className="pp-note-text">
-            Lỗi / khiếu nại phát sinh sau khi nhận: thông báo trong vòng 3 ngày kể từ ngày nhận hàng.
+            {tVn("note3day")}
           </span>
         </div>
 
-        {/* Signatures */}
         <div className="pp-sign">
           <div className="pp-sign-box">
-            <div className="pp-sign-label">客戶簽名 / KHÁCH HÀNG</div>
+            <div className="pp-sign-label">{tCn("sig.customer")} / {tVn("sig.customer")}</div>
             <div className="pp-sign-line" />
           </div>
           <div className="pp-sign-box">
-            <div className="pp-sign-label">簽收 / KÝ GIAO HÀNG</div>
+            <div className="pp-sign-label">{tCn("sig.receiver")} / {tVn("sig.receiver")}</div>
             <div className="pp-sign-line">{note.responsible_person ?? ""}</div>
           </div>
         </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
+import type { Locale } from "@/i18n/request";
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -86,6 +88,14 @@ export function PurchaseOrderForm({
   const [tickPending, startTick] = useTransition();
 
   const isEdit = mode === "edit";
+
+  const t = useTranslations("orders");
+  const tc = useTranslations("common");
+  const tt = useTranslations("toasts");
+  const te = useTranslations("errors");
+  const tp = useTranslations("status.po");
+  const tpay = useTranslations("status.payment");
+  const locale = useLocale() as Locale;
 
   const [supplierId, setSupplierId] = useState<string>(initialOrder?.supplier_id ?? "");
   const [supplierCompany, setSupplierCompany] = useState(initialOrder?.supplier_company ?? "");
@@ -248,7 +258,7 @@ export function PurchaseOrderForm({
       });
       if (res?.error) { toast.error(res.error); return; }
       setSupplierId(res.id);
-      toast.success("Đã lưu NCC vào danh bạ");
+      toast.success(tt("supplierSaved"));
     });
   }
 
@@ -257,7 +267,7 @@ export function PurchaseOrderForm({
       const res = await createBuyer({ name: buyerName, phone: buyerPhone });
       if (res?.error) { toast.error(res.error); return; }
       setBuyerId(res.id);
-      toast.success("Đã lưu người mua vào danh bạ");
+      toast.success(tt("buyerSaved"));
     });
   }
 
@@ -275,14 +285,14 @@ export function PurchaseOrderForm({
         const res = await updateCustomer(customerId, payload);
         if (res?.error) { toast.error(res.error); return; }
         setCustomerSaved(true);
-        toast.success("Đã cập nhật thông tin nhận");
+        toast.success(tt("receiverSaved"));
         return;
       }
       const res = await createCustomer(payload);
       if (res?.error) { toast.error(res.error); return; }
       setCustomerId(res.id);
       setCustomerSaved(true);
-      toast.success("Đã lưu thông tin nhận vào danh bạ");
+      toast.success(tt("receiverSaved"));
     });
   }
 
@@ -297,7 +307,7 @@ export function PurchaseOrderForm({
         default_vat_rate: l.vat_rate,
       });
       if (res?.error) { toast.error(res.error); return; }
-      toast.success("Đã lưu sản phẩm vào danh mục");
+      toast.success(tt("productSaved"));
     });
   }
 
@@ -320,11 +330,11 @@ export function PurchaseOrderForm({
       .filter((l) => l.product_name.trim() || l.quantity > 0 || l.unit_price > 0);
 
     if (items.length === 0) {
-      toast.error("Phải có ít nhất 1 dòng sản phẩm");
+      toast.error(te("needOneItem"));
       return;
     }
     if (paySum !== 100) {
-      toast.error(`Tổng % thanh toán = ${paySum} (phải = 100)`);
+      toast.error(te("paymentSum", { sum: paySum }));
       return;
     }
 
@@ -395,10 +405,10 @@ export function PurchaseOrderForm({
           </Button>
           <div>
             <h1 className="text-xl font-semibold tracking-tight">
-              {isEdit ? `Sửa đơn hàng` : "Tạo đơn đặt hàng"}
+              {isEdit ? t("edit") : t("create")}
             </h1>
             <p className="text-xs text-muted-foreground">
-              {isEdit && initialOrder ? initialOrder.order_code : "Đơn đặt hàng thu mua (Form 1)"}
+              {isEdit && initialOrder ? initialOrder.order_code : t("title") + " (Form 1)"}
             </p>
           </div>
         </div>
@@ -406,9 +416,9 @@ export function PurchaseOrderForm({
           <Button type="submit" disabled={pending}>
             {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEdit ? (
-              <><Pencil className="mr-2 h-4 w-4" /> Cập nhật</>
+              <><Pencil className="mr-2 h-4 w-4" /> {tc("update")}</>
             ) : (
-              "Lưu đơn"
+              t("save")
             )}
           </Button>
         </div>
@@ -417,14 +427,14 @@ export function PurchaseOrderForm({
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Nhà cung cấp & người mua</CardTitle>
+            <CardTitle className="text-base">{tc("suppliers")} & {t("buyer")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
-              <Label>Chọn NCC từ danh bạ</Label>
+              <Label>{tc("search")} {tc("suppliers")}</Label>
               <Select value={supplierId} onValueChange={pickSupplier}>
                 <SelectTrigger>
-                  <SelectValue placeholder="(hoặc nhập tay bên dưới)" />
+                  <SelectValue placeholder={"(" + tc("add") + ")"} />
                 </SelectTrigger>
                 <SelectContent>
                   {suppliers.map((s) => (
@@ -437,7 +447,7 @@ export function PurchaseOrderForm({
             </div>
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-1.5">
-                <Label>Tên công ty NCC</Label>
+                <Label>{t("supplierCompany")}</Label>
                 <Input value={supplierCompany} onChange={(e) => setSupplierCompany(e.target.value)} />
               </div>
               <Button
@@ -446,22 +456,22 @@ export function PurchaseOrderForm({
                 size="icon"
                 disabled={tickPending || !supplierCompany.trim() || isSupplierSaved}
                 onClick={handleSaveSupplier}
-                title="Lưu NCC vào danh bạ"
+                title={tt("supplierSaved")}
               >
                 {isSupplierSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Người phụ trách NCC" value={supplierContact} onChange={setSupplierContact} />
-              <Field label="SĐT NCC" value={supplierPhone} onChange={setSupplierPhone} />
+              <Field label={t("supplierContact")} value={supplierContact} onChange={setSupplierContact} />
+              <Field label={t("supplierPhone")} value={supplierPhone} onChange={setSupplierPhone} />
             </div>
             <Separator />
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-1.5">
-                <Label>Chọn người mua từ danh bạ</Label>
+                <Label>{tc("search")} {t("buyer")}</Label>
                 <Select value={buyerId} onValueChange={pickBuyer}>
                   <SelectTrigger>
-                    <SelectValue placeholder="(nhập tay)" />
+                    <SelectValue placeholder={"(" + tc("add") + ")"} />
                   </SelectTrigger>
                   <SelectContent>
                     {buyers.map((b) => (
@@ -475,7 +485,7 @@ export function PurchaseOrderForm({
             </div>
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-1.5">
-                <Label>Người mua hàng</Label>
+                <Label>{t("buyer")}</Label>
                 <Input value={buyerName} onChange={(e) => setBuyerName(e.target.value)} />
               </div>
               <Button
@@ -484,25 +494,25 @@ export function PurchaseOrderForm({
                 size="icon"
                 disabled={tickPending || !buyerName.trim() || isBuyerSaved}
                 onClick={handleSaveBuyer}
-                title="Lưu người mua vào danh bạ"
+                title={tt("buyerSaved")}
               >
                 {isBuyerSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
               </Button>
             </div>
-              <Field label="SĐT người mua" value={buyerPhone} onChange={setBuyerPhone} />
+              <Field label={t("supplierPhone")} value={buyerPhone} onChange={setBuyerPhone} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Người nhận hàng</CardTitle>
+            <CardTitle className="text-base">{t("receiver")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
-              <Label>Chọn khách hàng (tùy chọn)</Label>
+              <Label>{tc("search")} {tc("customers")}</Label>
               <Select value={customerId} onValueChange={pickCustomer}>
                 <SelectTrigger>
-                  <SelectValue placeholder="(để tự điền địa chỉ)" />
+                  <SelectValue placeholder={"(" + tc("add") + ")"} />
                 </SelectTrigger>
                 <SelectContent>
                   {customers.map((c) => (
@@ -516,20 +526,20 @@ export function PurchaseOrderForm({
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-end gap-2">
                 <div className="flex-1 space-y-1.5">
-                  <Label>Người nhận hàng</Label>
+                  <Label>{t("receiver")}</Label>
                   <Input value={receiverName} onChange={(e) => { setReceiverName(e.target.value); setCustomerSaved(false); }} />
                 </div>
               </div>
-              <Field label="SĐT người nhận" value={receiverPhone} onChange={(v) => { setReceiverPhone(v); setCustomerSaved(false); }} />
+              <Field label={t("receiverPhone")} value={receiverPhone} onChange={(v) => { setReceiverPhone(v); setCustomerSaved(false); }} />
             </div>
             <div className="space-y-1.5">
-              <Label>Địa chỉ nhận hàng</Label>
+              <Label>{t("deliveryAddress")}</Label>
               <Input value={receiverAddress} onChange={(e) => { setReceiverAddress(e.target.value); setCustomerSaved(false); }} />
             </div>
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-1.5">
-                <Label>Khách hàng (công ty)</Label>
-                <Input value={customerCompany} onChange={(e) => { setCustomerCompany(e.target.value); setCustomerSaved(false); }} placeholder="Tên công ty khách hàng" />
+                <Label>{t("customerCompany")}</Label>
+                <Input value={customerCompany} onChange={(e) => { setCustomerCompany(e.target.value); setCustomerSaved(false); }} placeholder={t("customerCompanyPlaceholder")} />
               </div>
               <Button
                 type="button"
@@ -537,38 +547,38 @@ export function PurchaseOrderForm({
                 size="icon"
                 disabled={tickPending || customerSaved || isCustomerSaved || (!receiverName.trim() && !customerCompany.trim())}
                 onClick={handleSaveCustomer}
-                title="Lưu thông tin nhận vào danh bạ"
+                title={tt("receiverSaved")}
               >
                 {customerSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
               </Button>
             </div>
             <div className="space-y-1.5">
-              <Label>Mã dự án</Label>
+              <Label>{t("projectCode")}</Label>
               <Input
                 value={projectCode}
                 onChange={(e) => setProjectCode(e.target.value.toUpperCase())}
-                placeholder="VD: YY202603005"
+                placeholder={t("code") + " YY202603005"}
               />
               <p className="text-xs text-muted-foreground">
-                Mã đơn đặt sẽ tự sinh, ví dụ PO202603005-01.
+                {t("orderCode")} PO202603005-01.
               </p>
             </div>
             <Separator />
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="ddate">Thời gian giao hàng</Label>
+                <Label htmlFor="ddate">{t("deliveryDate")}</Label>
                 <Input id="ddate" type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Trạng thái</Label>
+                <Label>{t("status")}</Label>
                 <Select value={status} onValueChange={(v) => setStatus(v as OrderStatus)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="draft">Nháp</SelectItem>
-                    <SelectItem value="confirmed">Đã duyệt</SelectItem>
-                    <SelectItem value="closed">Đã đóng</SelectItem>
+                    <SelectItem value="draft">{tp("draft")}</SelectItem>
+                    <SelectItem value="confirmed">{tp("confirmed")}</SelectItem>
+                    <SelectItem value="closed">{tp("closed")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -579,9 +589,9 @@ export function PurchaseOrderForm({
 
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">Danh mục thu mua</CardTitle>
+          <CardTitle className="text-base">{t("items")}</CardTitle>
           <Button type="button" variant="outline" size="sm" onClick={addLine}>
-            <Plus className="mr-2 h-4 w-4" /> Thêm dòng
+            <Plus className="mr-2 h-4 w-4" /> {t("addItem")}
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -595,14 +605,14 @@ export function PurchaseOrderForm({
               <thead>
                 <tr className="text-left text-xs text-muted-foreground">
                   <th className="w-8 pb-2">#</th>
-                  <th className="pb-2 pr-2">Tên sản phẩm</th>
-                  <th className="w-20 pb-2 pr-2">DVT</th>
-                  <th className="w-24 pb-2 pr-2">SL</th>
-                  <th className="w-32 pb-2 pr-2">Đơn giá</th>
+                  <th className="pb-2 pr-2">{t("product")}</th>
+                  <th className="w-20 pb-2 pr-2">{t("unit")}</th>
+                  <th className="w-24 pb-2 pr-2">{t("qty")}</th>
+                  <th className="w-32 pb-2 pr-2">{t("unitPrice")}</th>
                   <th className="w-20 pb-2 pr-2">VAT</th>
-                  <th className="w-32 pb-2 pr-2 text-right">T.TIỀN CHƯA VAT</th>
-                  <th className="w-28 pb-2 pr-2 text-right">Tiền VAT</th>
-                  <th className="w-32 pb-2 text-right">Tổng dòng</th>
+                  <th className="w-32 pb-2 pr-2 text-right">{t("subtotal")}</th>
+                  <th className="w-28 pb-2 pr-2 text-right">{t("vat")}</th>
+                  <th className="w-32 pb-2 text-right">{t("total")}</th>
                   <th className="w-20" />
                 </tr>
               </thead>
@@ -622,7 +632,7 @@ export function PurchaseOrderForm({
                           list="product-suggestions"
                           value={l.product_name}
                           onChange={(e) => handleProductNameChange(l.key, e.target.value)}
-                          placeholder="Tên / diễn giải sản phẩm"
+                          placeholder={t("product")}
                         />
                       </td>
                       <td className="pb-2 pr-2">
@@ -630,7 +640,7 @@ export function PurchaseOrderForm({
                           className="w-full"
                           value={l.unit}
                           onChange={(e) => updateLine(l.key, { unit: e.target.value })}
-                          placeholder="PCS"
+                          placeholder={t("unit")}
                         />
                       </td>
                       <td className="pb-2 pr-2">
@@ -664,13 +674,13 @@ export function PurchaseOrderForm({
                         </Select>
                       </td>
                       <td className="pb-2 pr-2 pt-2 text-right tabular-nums text-muted-foreground">
-                        {formatNumber(netBeforeVat(parsed))}
+                        {formatNumber(netBeforeVat(parsed), locale)}
                       </td>
                       <td className="pb-2 pr-2 pt-2 text-right tabular-nums text-muted-foreground">
-                        {formatNumber(lineVat(parsed))}
+                        {formatNumber(lineVat(parsed), locale)}
                       </td>
                       <td className="pb-2 pt-2 text-right font-medium tabular-nums">
-                        {formatNumber(lineTotal(parsed))}
+                        {formatNumber(lineTotal(parsed), locale)}
                       </td>
                       <td className="pb-2 pl-1">
                         <div className="flex items-center gap-0.5">
@@ -680,7 +690,7 @@ export function PurchaseOrderForm({
                             size="icon"
                             disabled={tickPending || !l.product_name.trim() || saved}
                             onClick={() => handleSaveProduct(idx)}
-                            title="Lưu sản phẩm vào danh mục"
+                            title={tt("productSaved")}
                           >
                             {saved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
                           </Button>
@@ -704,10 +714,10 @@ export function PurchaseOrderForm({
 
           <div className="ml-auto w-full max-w-sm rounded-lg border border-primary/20 bg-primary/[0.03] p-4">
             <div className="space-y-1 text-sm">
-              <TotalRow label="Tổng chưa thuế" value={formatDong(totals.subtotalExVat)} />
-              <TotalRow label="Tiền thuế (VAT)" value={formatDong(totals.vatTotal)} />
+              <TotalRow label={t("totalExclVat")} value={formatDong(totals.subtotalExVat, locale)} />
+              <TotalRow label={t("vat")} value={formatDong(totals.vatTotal, locale)} />
               <Separator className="my-1" />
-              <TotalRow label="Tổng gồm thuế" value={formatDong(totals.grandTotal)} strong />
+              <TotalRow label={t("totalInclVat")} value={formatDong(totals.grandTotal, locale)} strong />
             </div>
           </div>
         </CardContent>
@@ -716,9 +726,9 @@ export function PurchaseOrderForm({
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            Hình thức thanh toán (4 đợt){" "}
+            {t("paymentMethod")} (4){" "}
             <span className={paySum === 100 ? "text-muted-foreground" : "text-destructive"}>
-              · tổng {formatNumber(paySum)}%
+              · {tc("total")} {formatNumber(paySum, locale)}%
             </span>
           </CardTitle>
         </CardHeader>
@@ -727,12 +737,12 @@ export function PurchaseOrderForm({
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground">
-                  <th className="w-10 pb-2">Đợt</th>
-                  <th className="w-28 pb-2 pr-2">Tỷ lệ %</th>
-                  <th className="w-44 pb-2 pr-2">Ngày dự kiến</th>
-                  <th className="w-32 pb-2 pr-2">Trạng thái</th>
-                  <th className="pb-2 pr-2">Ngày thanh toán</th>
-                  <th className="w-36 pb-2 text-right">Số tiền</th>
+                  <th className="w-10 pb-2">#</th>
+                  <th className="w-28 pb-2 pr-2">%</th>
+                  <th className="w-44 pb-2 pr-2">{t("paymentDueDate")}</th>
+                  <th className="w-32 pb-2 pr-2">{t("status")}</th>
+                  <th className="pb-2 pr-2">{tc("save")}</th>
+                  <th className="w-36 pb-2 text-right">{tc("total")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -774,8 +784,8 @@ export function PurchaseOrderForm({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="unpaid">Chưa chi</SelectItem>
-                          <SelectItem value="paid">Đã chi</SelectItem>
+                          <SelectItem value="unpaid">{tpay("unpaid")}</SelectItem>
+                          <SelectItem value="paid">{tpay("paid")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </td>
@@ -792,7 +802,7 @@ export function PurchaseOrderForm({
                       />
                     </td>
                     <td className="pb-2 pt-2 text-right tabular-nums">
-                      {formatDong(installmentAmount(totals.grandTotal, parseLooseNumber(p.percent) || 0))}
+                      {formatDong(installmentAmount(totals.grandTotal, parseLooseNumber(p.percent) || 0), locale)}
                     </td>
                   </tr>
                 ))}
@@ -804,10 +814,10 @@ export function PurchaseOrderForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Ghi chú</CardTitle>
+          <CardTitle className="text-base">{t("note")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú đơn hàng (in ở cột Ghi chú Form 3)" />
+          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("note")} />
         </CardContent>
       </Card>
     </form>

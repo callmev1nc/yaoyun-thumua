@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { createSupplierSchema, updateSupplierSchema } from "@/lib/validation";
@@ -11,9 +12,10 @@ export async function createSupplier(input: {
   phone?: string | null;
 }) {
   const parsed = createSupplierSchema.safeParse(input);
-  if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
+  const t = await getTranslations("errors");
+  if (!parsed.success) return { error: t("invalidData") + ": " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
   const { data, error } = await supabase.from("suppliers").insert({
     company_name: parsed.data.company_name.trim(),
@@ -32,9 +34,10 @@ export async function updateSupplier(
   input: { company_name: string; contact_person?: string | null; phone?: string | null },
 ) {
   const parsed = updateSupplierSchema.safeParse(input);
-  if (!parsed.success) return { error: "Dữ liệu không hợp lệ: " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
+  const t = await getTranslations("errors");
+  if (!parsed.success) return { error: t("invalidData") + ": " + parsed.error.issues.map((i) => i.message).filter(Boolean).join(", ") };
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
   const { error } = await supabase
     .from("suppliers")
@@ -51,7 +54,8 @@ export async function updateSupplier(
 
 export async function deleteSupplier(id: string) {
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  const t = await getTranslations("errors");
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
   const { error } = await supabase.from("suppliers").delete().eq("id", id);
   if (error) return { error: error.message };

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
+import type { Locale } from "@/i18n/request";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -51,6 +53,13 @@ export function DeliveryNoteForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
+  const t = useTranslations("delivery");
+  const tc = useTranslations("common");
+  const tt = useTranslations("toasts");
+  const te = useTranslations("errors");
+  const to = useTranslations("orders");
+  const locale = useLocale() as Locale;
+
   const isEdit = mode === "edit";
 
   const [deliveryDate, setDeliveryDate] = useState(
@@ -101,13 +110,14 @@ export function DeliveryNoteForm({
   const warningLines = useMemo(() => {
     const out: string[] = [];
     for (const r of rows) {
-      const qty = parseLooseNumber(r.delivered_qty) || 0;
+      const qty = parseLooseNumber(r.delivered_qty, locale) || 0;
       if (qty > r.remaining) {
-        out.push(`${r.product_name}: giao ${qty}, còn ${r.remaining}`);
+        out.push(t("warningLine", { name: r.product_name, qty, remaining: r.remaining }));
       }
     }
     return out;
-  }, [rows]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, locale]);
 
   function updateRow(idx: number, delivered_qty: string) {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, delivered_qty } : r)));
@@ -121,20 +131,21 @@ export function DeliveryNoteForm({
         order_item_id: r.order_item_id,
         product_name: r.product_name,
         unit: r.unit,
-        delivered_qty: parseLooseNumber(r.delivered_qty) || 0,
+        delivered_qty: parseLooseNumber(r.delivered_qty, locale) || 0,
       }))
       .filter((it) => it.delivered_qty > 0);
 
     if (items.length === 0) {
-      toast.error("Phải giao ít nhất 1 sản phẩm");
+      toast.error(te("needOneItem"));
       return;
     }
 
-    const over = rows.filter((r) => (parseLooseNumber(r.delivered_qty) || 0) > r.remaining);
+    const over = rows.filter((r) => (parseLooseNumber(r.delivered_qty, locale) || 0) > r.remaining);
     if (over.length > 0) {
-      toast.error(
-        `Giao vượt SL: ${over.map((r) => `${r.product_name} (SL: ${r.ordered_qty}, còn: ${r.remaining})`).join(", ")}`,
-      );
+      const itemsStr = over
+        .map((r) => te("deliveryOverItem", { name: r.product_name, qty: r.ordered_qty, remaining: r.remaining }))
+        .join(", ");
+      toast.error(te("deliveryOver", { items: itemsStr }));
       return;
     }
 
@@ -176,12 +187,12 @@ export function DeliveryNoteForm({
       <div className="sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur-sm md:-mx-8 md:px-8">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
-            {isEdit ? "Sửa phiếu giao hàng" : "Tạo phiếu giao hàng"}
+            {isEdit ? tc("edit") + " " + t("title") : t("create")}
           </h1>
           <p className="text-xs text-muted-foreground">
-            {isEdit && initialNote ? initialNote.delivery_code : `Đơn hàng: ${order.order_code}`}
+            {isEdit && initialNote ? initialNote.delivery_code : `${t("code")}: ${order.order_code}`}
             {!isEdit && ` — ${order.supplier_company ?? "—"}`}
-            {!isEdit && order.project_code ? ` · Dự án: ${order.project_code}` : ""}
+            {!isEdit && order.project_code ? ` · ${to("projectCode")}: ${order.project_code}` : ""}
             {!isEdit && order.po_code ? ` · ${order.po_code}` : ""}
           </p>
         </div>
@@ -189,9 +200,9 @@ export function DeliveryNoteForm({
           <Button type="submit" disabled={pending}>
             {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEdit ? (
-              <><Pencil className="mr-2 h-4 w-4" /> Cập nhật</>
+              <><Pencil className="mr-2 h-4 w-4" /> {tc("update")}</>
             ) : (
-              "Lưu phiếu"
+              tc("save")
             )}
           </Button>
         </div>
@@ -200,28 +211,28 @@ export function DeliveryNoteForm({
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">THÔNG TIN GIAO HÀNG</CardTitle>
+            <CardTitle className="text-base">{t("deliveryInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Field label="Thông tin khách hàng" value={customerInfo} onChange={setCustomerInfo} />
+            <Field label={tc("customers")} value={customerInfo} onChange={setCustomerInfo} />
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Người chịu trách nhiệm" value={responsiblePerson} onChange={setResponsiblePerson} />
-              <Field label="SĐT" value={responsiblePhone} onChange={setResponsiblePhone} />
+              <Field label={t("responsiblePerson")} value={responsiblePerson} onChange={setResponsiblePerson} />
+              <Field label={t("phone")} value={responsiblePhone} onChange={setResponsiblePhone} />
             </div>
-            <Field label="Mã PGH (tuỳ chọn)" value={pghCode} onChange={setPghCode} placeholder="VD: REXON-01 (để trống = tự sinh)" />
+            <Field label={t("code")} value={pghCode} onChange={setPghCode} placeholder={t("codePlaceholder")} />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">NGƯỜI NHẬN HÀNG</CardTitle>
+            <CardTitle className="text-base">{t("receiverInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Người nhận" value={receiverName} onChange={setReceiverName} />
-              <Field label="SĐT" value={receiverPhone} onChange={setReceiverPhone} />
+              <Field label={t("receiver")} value={receiverName} onChange={setReceiverName} />
+              <Field label={t("phone")} value={receiverPhone} onChange={setReceiverPhone} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ddate">Ngày giao hàng</Label>
+              <Label htmlFor="ddate">{t("date")}</Label>
               <Input id="ddate" type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
             </div>
           </CardContent>
@@ -230,30 +241,30 @@ export function DeliveryNoteForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Danh mục hàng giao</CardTitle>
+          <CardTitle className="text-base">{t("title")}</CardTitle>
         </CardHeader>
         <CardContent>
           {warningLines.length > 0 && (
             <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/5 px-4 py-2 text-sm text-destructive">
-              Giao vượt số lượng còn lại: {warningLines.join("; ")}
+               {t("overWarning", { items: warningLines.join("; ") })}
             </div>
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground">
-                  <th className="w-8 pb-2">TT</th>
-                  <th className="pb-2 pr-2">交貨項目 / Tên hàng</th>
-                  <th className="w-16 pb-2 pr-2">單位 DVT</th>
-                  <th className="w-24 pb-2 pr-2 text-right">數量 SL đặt</th>
-                  <th className="w-24 pb-2 pr-2 text-right">Đã giao</th>
-                  <th className="w-24 pb-2 pr-2 text-right">Còn lại</th>
-                  <th className="w-28 pb-2 text-right">Giao lần này</th>
+                  <th className="w-8 pb-2">{t("no")}</th>
+                  <th className="pb-2 pr-2">{t("product")}</th>
+                  <th className="w-16 pb-2 pr-2">{t("unit")}</th>
+                  <th className="w-24 pb-2 pr-2 text-right">{t("orderedQty")}</th>
+                  <th className="w-24 pb-2 pr-2 text-right">{t("delivered")}</th>
+                  <th className="w-24 pb-2 pr-2 text-right">{to("remaining")}</th>
+                  <th className="w-28 pb-2 text-right">{t("deliverNow")}</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, idx) => {
-                  const qty = parseLooseNumber(r.delivered_qty) || 0;
+                  const qty = parseLooseNumber(r.delivered_qty, locale) || 0;
                   const over = qty > r.remaining;
                   const done = r.remaining <= 0;
                   return (
@@ -261,13 +272,13 @@ export function DeliveryNoteForm({
                       <td className="pb-2 pt-2 text-muted-foreground">{idx + 1}</td>
                       <td className="pb-2 pr-2 pt-2 font-medium">{r.product_name}</td>
                       <td className="pb-2 pr-2 pt-2">{r.unit ?? "—"}</td>
-                      <td className="pb-2 pr-2 pt-2 text-right tabular-nums">{formatNumber(r.ordered_qty)}</td>
-                      <td className="pb-2 pr-2 pt-2 text-right tabular-nums">{formatNumber(r.already_delivered)}</td>
+                      <td className="pb-2 pr-2 pt-2 text-right tabular-nums">{formatNumber(r.ordered_qty, locale)}</td>
+                      <td className="pb-2 pr-2 pt-2 text-right tabular-nums">{formatNumber(r.already_delivered, locale)}</td>
                       <td className="pb-2 pr-2 pt-2 text-right tabular-nums">
                         {done ? (
                           <span className="text-muted-foreground">0</span>
                         ) : (
-                          formatNumber(r.remaining)
+                          formatNumber(r.remaining, locale)
                         )}
                       </td>
                       <td className="pb-2 pt-2">

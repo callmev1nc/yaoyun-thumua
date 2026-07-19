@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import type { DeliveryStatus } from "@/types/db";
@@ -47,8 +48,9 @@ async function nextDeliveryCode(
 
 export async function createDelivery(input: CreateDeliveryInput) {
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
-  if (!input.items.length) return { error: "Phải có ít nhất 1 dòng sản phẩm" };
+  const t = await getTranslations("errors");
+  if (!ctx) return { error: t("notLoggedIn") };
+  if (!input.items.length) return { error: t("needOneItem") };
 
   const supabase = await createClient();
   const year = new Date().getFullYear();
@@ -59,7 +61,7 @@ export async function createDelivery(input: CreateDeliveryInput) {
     .select("id, quantity, product_name")
     .eq("order_id", input.order_id);
   if (oiErr) return { error: oiErr.message };
-  if (!orderItems?.length) return { error: "Đơn hàng không có sản phẩm" };
+  if (!orderItems?.length) return { error: t("orderNoItems") };
 
   const itemMap = new Map(orderItems.map((i) => [i.id, i]));
 
@@ -82,11 +84,11 @@ export async function createDelivery(input: CreateDeliveryInput) {
 
   for (const it of input.items) {
     const item = itemMap.get(it.order_item_id);
-    if (!item) return { error: `Sản phẩm "${it.product_name}" không thuộc đơn hàng này` };
+    if (!item) return { error: t("itemNotInOrder", { name: it.product_name }) };
     const delivered = deliveredMap.get(it.order_item_id) ?? 0;
     const remaining = Number(item.quantity) - delivered;
     if (it.delivered_qty > remaining) {
-      return { error: `Sản phẩm "${item.product_name}" chỉ còn ${remaining} có thể giao (đã giao ${delivered}/${item.quantity})` };
+      return { error: t("itemRemaining", { name: item.product_name, remaining, delivered, total: item.quantity }) };
     }
   }
 
@@ -135,7 +137,8 @@ export async function createDelivery(input: CreateDeliveryInput) {
 
 export async function deleteDelivery(id: string) {
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  const t = await getTranslations("errors");
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
 
   const { data: dn } = await supabase
@@ -143,7 +146,7 @@ export async function deleteDelivery(id: string) {
     .select("order_id")
     .eq("id", id)
     .single();
-  if (!dn) return { error: "Không tìm thấy phiếu" };
+  if (!dn) return { error: t("deliveryNoteNotFound") };
 
   const { error } = await supabase.from("delivery_notes").delete().eq("id", id);
   if (error) return { error: error.message };
@@ -155,9 +158,10 @@ export async function deleteDelivery(id: string) {
 
 export async function updateDelivery(id: string, input: CreateDeliveryInput) {
   const parsed = updateDeliverySchema.safeParse(input);
-  if (!parsed.success) return { error: "Dữ liệu không hợp lệ" };
+  const t = await getTranslations("errors");
+  if (!parsed.success) return { error: t("invalidData") };
   const ctx = await getCurrentUser();
-  if (!ctx) return { error: "Chưa đăng nhập" };
+  if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
 
   // Re-validate delivered_qty ≤ remaining (same as createDelivery)
@@ -193,11 +197,11 @@ export async function updateDelivery(id: string, input: CreateDeliveryInput) {
 
   for (const it of input.items) {
     const item = itemMap.get(it.order_item_id);
-    if (!item) return { error: `Sản phẩm "${it.product_name}" không thuộc đơn hàng này` };
+    if (!item) return { error: t("itemNotInOrder", { name: it.product_name }) };
     const delivered = deliveredMap.get(it.order_item_id) ?? 0;
     const remaining = Number(item.quantity) - delivered;
     if (it.delivered_qty > remaining) {
-      return { error: `Sản phẩm "${item.product_name}" chỉ còn ${remaining} có thể giao (đã giao ${delivered}/${item.quantity})` };
+      return { error: t("itemRemaining", { name: item.product_name, remaining, delivered, total: item.quantity }) };
     }
   }
 

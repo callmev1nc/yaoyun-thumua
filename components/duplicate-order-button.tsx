@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,13 +9,15 @@ import { toast } from "sonner";
 
 export function DuplicateOrderButton({ id }: { id: string }) {
   const [pending, start] = useTransition();
+  const t = useTranslations("orders");
+  const tc = useTranslations("confirm");
   return (
     <Button
       variant="outline"
       disabled={pending}
-      title="Sao chép đơn"
+      title={t("duplicate")}
       onClick={() => {
-        if (!confirm("Sao chép thành đơn nháp mới?")) return;
+        if (!confirm(tc("duplicate"))) return;
         start(async () => {
           const res = await duplicateOrder(id);
           if (res?.error) toast.error(res.error);
@@ -22,7 +25,7 @@ export function DuplicateOrderButton({ id }: { id: string }) {
       }}
     >
       {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Copy className="mr-2 h-4 w-4" />}
-      Sao chép
+      {t("duplicate")}
     </Button>
   );
 }

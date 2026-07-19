@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import type { Profile, UserRole } from "@/types/db";
@@ -47,7 +48,8 @@ export async function listUsers(): Promise<{ data?: UserWithEmail[]; error?: str
 
 export async function updateUserRole(userId: string, role: UserRole) {
   const ctx = await requireAdmin();
-  if (userId === ctx.user.id) return { error: "Không thể tự đổi role của mình" };
+  const t = await getTranslations("errors");
+  if (userId === ctx.user.id) return { error: t("cannotSelfChangeRole") };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -61,9 +63,10 @@ export async function updateUserRole(userId: string, role: UserRole) {
 
 export async function resetUserPassword(userId: string, newPassword: string) {
   await requireAdmin();
+  const t = await getTranslations("errors");
 
   if (!newPassword || newPassword.length < 6) {
-    return { error: "Mật khẩu phải có ít nhất 6 ký tự" };
+    return { error: t("passwordMinLength") };
   }
 
   try {
@@ -73,7 +76,7 @@ export async function resetUserPassword(userId: string, newPassword: string) {
     });
     if (error) return { error: error.message };
   } catch {
-    return { error: "Chưa cấu hình SUPABASE_SERVICE_ROLE_KEY — không thể đổi mật khẩu" };
+    return { error: t("noServiceRolePassword") };
   }
   revalidatePath("/admin/users");
 }
@@ -90,7 +93,8 @@ export async function createUser({
   role: UserRole;
 }) {
   await requireAdmin();
-  if (!email || !password) return { error: "Email và mật khẩu là bắt buộc" };
+  const t = await getTranslations("errors");
+  if (!email || !password) return { error: t("emailPasswordRequired") };
 
   try {
     const admin = await createAdminClient();
@@ -111,7 +115,7 @@ export async function createUser({
       if (roleErr) return { error: roleErr.message };
     }
   } catch {
-    return { error: "Chưa cấu hình SUPABASE_SERVICE_ROLE_KEY — không thể tạo người dùng" };
+    return { error: t("noServiceRoleCreateUser") };
   }
 
   revalidatePath("/admin/users");

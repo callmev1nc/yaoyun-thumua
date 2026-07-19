@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { createUser } from "@/lib/actions/admin";
 import { Loader2, Plus } from "lucide-react";
@@ -27,6 +28,11 @@ import {
 
 export function CreateUserDialog() {
   const router = useRouter();
+  const t = useTranslations("users");
+  const ta = useTranslations("auth");
+  const tr = useTranslations("roles");
+  const te = useTranslations("errors");
+  const tt = useTranslations("toasts");
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,7 +50,7 @@ export function CreateUserDialog() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
-      toast.error("Email và mật khẩu là bắt buộc");
+      toast.error(te("emailPasswordRequired"));
       return;
     }
     startTransition(async () => {
@@ -57,7 +63,7 @@ export function CreateUserDialog() {
       if (res?.error) {
         toast.error(res.error);
       } else {
-        toast.success("Đã tạo người dùng");
+        toast.success(tt("userCreated"));
         setOpen(false);
         reset();
         router.refresh();
@@ -69,45 +75,45 @@ export function CreateUserDialog() {
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="mr-2 h-4 w-4" /> Tạo người dùng
+          <Plus className="mr-2 h-4 w-4" /> {t("create")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Tạo người dùng</DialogTitle>
+          <DialogTitle>{t("create")}</DialogTitle>
           <DialogDescription>
-            Tạo tài khoản mới — người dùng có thể đăng nhập ngay bằng email/mật khẩu.
+            {t("createDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
+            <Label htmlFor="email">{ta("email")} *</Label>
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Mật khẩu * (ít nhất 6 ký tự)</Label>
+            <Label htmlFor="password">{t("passwordLabel")}</Label>
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="fullName">Họ tên</Label>
+            <Label htmlFor="fullName">{t("fullName")}</Label>
             <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Vai trò</Label>
+            <Label>{t("role")}</Label>
             <Select value={role} onValueChange={(v) => setRole(v as "admin" | "staff")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="staff">Nhân viên</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="staff">{tr("staff")}</SelectItem>
+                <SelectItem value="admin">{tr("admin")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={pending}>
               {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Tạo tài khoản
+              {t("createAccount")}
             </Button>
           </DialogFooter>
         </form>

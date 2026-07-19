@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/request";
 import type { DeliveryNote, DeliveryItem } from "@/types/db";
 import { PrintDeliveryNote } from "@/components/print/print-delivery-note";
 
@@ -12,6 +14,7 @@ export default async function PrintDeliveryNotePage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const locale = await getLocale() as Locale;
 
   const { data: dn } = await supabase
     .from("delivery_notes")
@@ -29,6 +32,13 @@ export default async function PrintDeliveryNotePage({
 
   const po = (dn as unknown as { purchase_orders: { order_code: string; project_code: string | null; po_code: string | null } }).purchase_orders;
 
+  const tVn = await getTranslations({ locale: "vi", namespace: "print" });
+  const cnVariant: Locale = locale === "zh-Hans" ? "zh-Hans" : "zh-Hant";
+  const tCn = await getTranslations({ locale: cnVariant, namespace: "print" });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const translate = (t: any) => (key: string, values?: Record<string, any>) => t(key, values);
+
   return (
     <PrintDeliveryNote
       note={dn as DeliveryNote}
@@ -36,6 +46,9 @@ export default async function PrintDeliveryNotePage({
       orderCode={po?.order_code}
       projectCode={po?.project_code}
       poCode={po?.po_code}
+      tCn={translate(tCn)}
+      tVn={translate(tVn)}
+      locale={locale}
     />
   );
 }

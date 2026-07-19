@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { updateUserRole } from "@/lib/actions/admin";
 import type { UserRole } from "@/types/db";
@@ -18,17 +19,21 @@ export function ChangeRoleButton({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const tRoles = useTranslations("roles");
+  const tConfirm = useTranslations("confirm");
+  const tToasts = useTranslations("toasts");
   const nextRole: UserRole = currentRole === "admin" ? "staff" : "admin";
-  const label = currentRole === "admin" ? "Giáng xuống NV" : "Nâng lên Admin";
+  const label = currentRole === "admin" ? tRoles("demoteToStaff") : tRoles("promoteToAdmin");
 
   function handleClick() {
-    if (!confirm(`Chuyển vai trò người dùng này thành "${nextRole === "admin" ? "Admin" : "Nhân viên"}"?`)) return;
+    const roleLabel = nextRole === "admin" ? tRoles("admin") : tRoles("staff");
+    if (!confirm(tConfirm("changeRole", { role: roleLabel }))) return;
     startTransition(async () => {
       const res = await updateUserRole(userId, nextRole);
       if (res?.error) {
         toast.error(res.error);
       } else {
-        toast.success("Đã đổi vai trò");
+        toast.success(tToasts("roleChanged"));
         router.refresh();
       }
     });

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/request";
 import { formatDong, formatDate } from "@/lib/number-format";
 import type { PurchaseOrder } from "@/types/db";
 import { Button } from "@/components/ui/button";
@@ -24,6 +26,9 @@ export default async function PurchaseOrdersPage({
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
   const supabase = await createClient();
+  const t = await getTranslations("orders");
+  const tc = await getTranslations("common");
+  const locale = await getLocale() as Locale;
 
   let query = supabase
     .from("purchase_orders")
@@ -43,14 +48,14 @@ export default async function PurchaseOrdersPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Đơn đặt hàng</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Thống kê & quản lý đơn đặt hàng thu mua (Form 1)
+            {t("subtitle")}
           </p>
         </div>
         <Button asChild>
           <Link href="/purchase-orders/new">
-            <Plus className="mr-2 h-4 w-4" /> Tạo đơn đặt hàng
+            <Plus className="mr-2 h-4 w-4" /> {t("create")}
           </Link>
         </Button>
       </div>
@@ -60,7 +65,7 @@ export default async function PurchaseOrdersPage({
         <Input
           name="q"
           defaultValue={q}
-          placeholder="Tìm theo mã, NCC, người mua…"
+          placeholder={t("searchPlaceholder")}
           className="pl-9"
         />
       </form>
@@ -69,15 +74,15 @@ export default async function PurchaseOrdersPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Mã đơn</TableHead>
-              <TableHead>Khách hàng</TableHead>
-              <TableHead>Mã dự án</TableHead>
-              <TableHead>Mã đơn đặt</TableHead>
-              <TableHead>Nhà cung cấp</TableHead>
-              <TableHead>Người mua</TableHead>
-              <TableHead>Ngày giao</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead className="text-right">Tổng gồm thuế</TableHead>
+              <TableHead>{t("code")}</TableHead>
+              <TableHead>{t("customer")}</TableHead>
+              <TableHead>{t("projectCode")}</TableHead>
+              <TableHead>{t("orderCode")}</TableHead>
+              <TableHead>{t("supplierCompany")}</TableHead>
+              <TableHead>{t("buyer")}</TableHead>
+              <TableHead>{t("deliveryDate")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
+              <TableHead className="text-right">{t("totalInclVat")}</TableHead>
               <TableHead className="w-[60px]" />
             </TableRow>
           </TableHeader>
@@ -85,13 +90,13 @@ export default async function PurchaseOrdersPage({
             {orders.length === 0 && (
               <EmptyState
                 icon={ClipboardList}
-                title="Chưa có đơn đặt hàng nào"
-                description="Tạo đơn đặt hàng đầu tiên để bắt đầu."
+                title={t("empty")}
+                description={t("emptyHint")}
                 colSpan={10}
                 action={
                   <Button asChild size="sm">
                     <Link href="/purchase-orders/new">
-                      <Plus className="mr-1 h-3 w-3" /> Tạo đơn đầu tiên
+                      <Plus className="mr-1 h-3 w-3" /> {t("create")}
                     </Link>
                   </Button>
                 }
@@ -112,16 +117,16 @@ export default async function PurchaseOrdersPage({
                 <TableCell>{o.po_code ?? "—"}</TableCell>
                 <TableCell>{o.supplier_company ?? "—"}</TableCell>
                 <TableCell>{o.buyer_name ?? "—"}</TableCell>
-                <TableCell>{formatDate(o.delivery_date)}</TableCell>
+                <TableCell>{formatDate(o.delivery_date, locale)}</TableCell>
                 <TableCell>
                   <POStatusBadge status={o.status} />
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {formatDong(o.grand_total)}
+                  {formatDong(o.grand_total, locale)}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button asChild variant="ghost" size="sm">
-                    <Link href={`/purchase-orders/${o.id}`}>Xem</Link>
+                    <Link href={`/purchase-orders/${o.id}`}>{tc("view")}</Link>
                   </Button>
                 </TableCell>
               </TableRow>
