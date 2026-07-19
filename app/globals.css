@@ -323,6 +323,14 @@
   min-height: 14px;
 }
 
+/* Printable A4 documents always render on white, regardless of theme. */
+@media screen {
+  :is(.dark) .print-page {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
 @media print {
   @page {
     size: A4;

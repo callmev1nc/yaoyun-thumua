@@ -36,6 +36,7 @@
     "suppliers": "Nhà cung cấp",
     "customers": "Khách hàng",
     "users": "Người dùng",
+    "settings": "Cài đặt",
     "navAria": "Menu điều hướng",
     "brandSubtitle": "Thu mua"
   },
@@ -266,6 +267,20 @@
     "passwordLabel": "Mật khẩu * (ít nhất 6 ký tự)",
     "createAccount": "Tạo tài khoản",
     "resetPasswordButton": "Đổi mật khẩu"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "subtitle": "Tùy chọn cá nhân",
+    "appearance": "Giao diện",
+    "theme": "Chủ đề",
+    "themeLight": "Sáng",
+    "themeDark": "Tối",
+    "themeSystem": "Theo hệ thống",
+    "language": "Ngôn ngữ",
+    "profile": "Hồ sơ",
+    "displayName": "Tên hiển thị",
+    "save": "Lưu",
+    "saved": "Đã lưu"
   },
   "toasts": {
     "saved": "Đã lưu",
