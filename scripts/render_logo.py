@@ -27,6 +27,14 @@ APP = PROJECT / "yaoyun-thumua" / "app"
 # ── helpers ──────────────────────────────────────────────────────────
 
 
+def pad_square(img: Image.Image) -> Image.Image:
+    """Center an image on a transparent square canvas (largest side)."""
+    sz = max(img.width, img.height)
+    canvas = Image.new("RGBA", (sz, sz), (0, 0, 0, 0))
+    canvas.paste(img, ((sz - img.width) // 2, (sz - img.height) // 2))
+    return canvas
+
+
 def alpha_trim(img: Image.Image) -> Image.Image:
     """Crop transparent borders from a PIL Image with alpha."""
     arr = np.array(img)
@@ -69,47 +77,6 @@ def render_transparent_master(pdf_path: Path, scale: float = 8) -> Image.Image:
     return img
 
 
-def detect_cloud_bbox(img: Image.Image) -> tuple[int, int, int, int]:
-    """
-    Auto-detect the blue cloud region only (excluding the text below).
-    Uses the row where dark text pixels outnumber blue cloud pixels as
-    the vertical cut-off, then trims horizontal transparent edges.
-    """
-    arr = np.array(img)
-    r, g, b, a = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2], arr[:, :, 3]
-    h = arr.shape[0]
-
-    # Find the first row where dark pixels dominate (text region)
-    cut_row = h
-    for row_idx in range(h):
-        row_a = a[row_idx] > 0
-        vis = row_a.sum()
-        if vis == 0:
-            continue
-        # Bright blue cloud pixels
-        bblue = (b[row_idx] > 130) & (g[row_idx] > 100) & (r[row_idx] < 100) & row_a
-        # Dark text pixels (not bright blue)
-        dark = (r[row_idx] < 60) & (g[row_idx] < 60) & (b[row_idx] < 80) & (~bblue) & row_a
-        dark_ratio = dark.sum() / max(vis, 1)
-        if dark_ratio > 0.25 and row_idx > 30:
-            cut_row = row_idx
-            break
-
-    cloud_region = arr[:cut_row]
-    cr, cg, cb, ca = cloud_region[:,:,0], cloud_region[:,:,1], cloud_region[:,:,2], cloud_region[:,:,3]
-    bblue_region = (cb > 130) & (cg > 100) & (cr < 100) & (ca > 0)
-
-    rows = np.any(bblue_region, axis=1)
-    cols = np.any(bblue_region, axis=0)
-
-    y0 = int(rows.argmax()) if rows.any() else 0
-    y1 = int(rows.size - rows[::-1].argmax()) if rows.any() else h
-    x0 = int(cols.argmax()) if cols.any() else 0
-    x1 = int(cols.size - cols[::-1].argmax()) if cols.any() else arr.shape[1]
-
-    return (x0, y0, x1, y1)
-
-
 def make_ico_sizes(size: int) -> list[tuple[int, int]]:
     """Return standard .ico frame sizes up to *size*."""
     ico_sizes = [16, 24, 32, 48, 64, 96, 128, 256]
@@ -142,22 +109,15 @@ def main():
     logo_512.save(PUBLIC / "icon.png", "PNG")
     print(f"  [OK] public/icon.png  (512x512)")
 
-    # ── 4. app/icon.png ── modern tab icon (cloud mark, 256px) ──
-    print("Detecting cloud bbox for favicon crop …")
-    crop = detect_cloud_bbox(master)
-    print(f"  Cloud bbox: {crop}")
-    cloud = master.crop(crop)
-    # Pad to square
-    sz = max(cloud.width, cloud.height)
-    cloud_sq = Image.new("RGBA", (sz, sz), (0, 0, 0, 0))
-    cloud_sq.paste(cloud, ((sz - cloud.width) // 2, 0))
-    cloud_256 = cloud_sq.resize((256, 256), Image.LANCZOS)
-    cloud_256.save(APP / "icon.png", "PNG")
+    # ── 4. app/icon.png ── modern tab icon (full logo, 256px) ──
+    full_sq = pad_square(master)
+    full_256 = full_sq.resize((256, 256), Image.LANCZOS)
+    full_256.save(APP / "icon.png", "PNG")
     print(f"  [OK] app/icon.png  (256x256)")
 
     # ── 5. app/favicon.ico ── multi-resolution (PNG-format entries) ──
     ico_sizes = [16, 24, 32, 48, 64, 96, 128, 256]
-    ico_frames = [cloud_sq.resize((s, s), Image.LANCZOS) for s in ico_sizes]
+    ico_frames = [full_sq.resize((s, s), Image.LANCZOS) for s in ico_sizes]
     # Encode each frame as PNG for ICO embedding
     ico_pngs = []
     for frame in ico_frames:
