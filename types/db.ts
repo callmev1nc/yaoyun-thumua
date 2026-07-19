@@ -2,7 +2,17 @@
 
 export type UserRole = "admin" | "staff"
 
-export interface Profile {
+/** Per-user PO defaults ("remember last used"). All optional/nullable. */
+export interface ProfileDefaults {
+  last_supplier_id?: string | null
+  last_customer_id?: string | null
+  last_buyer_name?: string | null
+  last_buyer_phone?: string | null
+  default_vat_rate?: number | null
+  default_payment_schedule?: number[] | null
+}
+
+export interface Profile extends ProfileDefaults {
   id: string
   full_name: string | null
   role: UserRole

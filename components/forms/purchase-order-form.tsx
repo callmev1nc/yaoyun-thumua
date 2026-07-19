@@ -6,7 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Trash2, Loader2, Bookmark, BookmarkCheck, Pencil } from "lucide-react";
-import type { Supplier, Customer, Product, Buyer, OrderStatus, PurchaseOrder, OrderItem, PaymentSchedule } from "@/types/db";
+import type { Supplier, Customer, Product, Buyer, OrderStatus, PurchaseOrder, OrderItem, PaymentSchedule, ProfileDefaults } from "@/types/db";
 import {
   createOrder,
   updateOrder,
@@ -73,6 +73,7 @@ export function PurchaseOrderForm({
   initialOrder,
   initialItems,
   initialPayments,
+  initialDefaults,
 }: {
   suppliers: Supplier[];
   customers: Customer[];
@@ -83,6 +84,7 @@ export function PurchaseOrderForm({
   initialOrder?: PurchaseOrder;
   initialItems?: OrderItem[];
   initialPayments?: PaymentSchedule[];
+  initialDefaults?: ProfileDefaults;
 }) {
   const [pending, startTransition] = useTransition();
   const [tickPending, startTick] = useTransition();
@@ -97,21 +99,55 @@ export function PurchaseOrderForm({
   const tpay = useTranslations("status.payment");
   const locale = useLocale() as Locale;
 
-  const [supplierId, setSupplierId] = useState<string>(initialOrder?.supplier_id ?? "");
-  const [supplierCompany, setSupplierCompany] = useState(initialOrder?.supplier_company ?? "");
-  const [supplierContact, setSupplierContact] = useState(initialOrder?.supplier_contact ?? "");
-  const [supplierPhone, setSupplierPhone] = useState(initialOrder?.supplier_phone ?? "");
+  // --- smart defaults: resolve last-used values (CREATE mode only) ---
+  const d = !isEdit ? initialDefaults : undefined;
+  const seedSupplier = d?.last_supplier_id
+    ? suppliers.find((s) => s.id === d.last_supplier_id)
+    : undefined;
+  const seedCustomer = d?.last_customer_id
+    ? customers.find((c) => c.id === d.last_customer_id)
+    : undefined;
+  const rawSched = d?.default_payment_schedule;
+  const seedSchedule = Array.isArray(rawSched) && rawSched.length > 0 ? rawSched : [30, 30, 30, 10];
+  const seedVat = d?.default_vat_rate === 8 || d?.default_vat_rate === 10 ? d.default_vat_rate : 8;
 
-  const [buyerName, setBuyerName] = useState(initialOrder?.buyer_name ?? currentUserName);
-  const [buyerPhone, setBuyerPhone] = useState(initialOrder?.buyer_phone ?? "");
+  const [supplierId, setSupplierId] = useState<string>(
+    initialOrder?.supplier_id ?? seedSupplier?.id ?? "",
+  );
+  const [supplierCompany, setSupplierCompany] = useState(
+    initialOrder?.supplier_company ?? seedSupplier?.company_name ?? "",
+  );
+  const [supplierContact, setSupplierContact] = useState(
+    initialOrder?.supplier_contact ?? seedSupplier?.contact_person ?? "",
+  );
+  const [supplierPhone, setSupplierPhone] = useState(
+    initialOrder?.supplier_phone ?? seedSupplier?.phone ?? "",
+  );
+
+  const [buyerName, setBuyerName] = useState(
+    initialOrder?.buyer_name ?? seedCustomer?.contact_name ?? d?.last_buyer_name ?? currentUserName,
+  );
+  const [buyerPhone, setBuyerPhone] = useState(
+    initialOrder?.buyer_phone ?? seedCustomer?.phone ?? d?.last_buyer_phone ?? "",
+  );
   const [buyerId, setBuyerId] = useState<string>("");
 
-  const [receiverName, setReceiverName] = useState(initialOrder?.receiver_name ?? "");
-  const [receiverPhone, setReceiverPhone] = useState(initialOrder?.receiver_phone ?? "");
-  const [receiverAddress, setReceiverAddress] = useState(initialOrder?.receiver_address ?? "");
-  const [customerId, setCustomerId] = useState<string>(initialOrder?.customer_id ?? "");
-  const [customerCompany, setCustomerCompany] = useState(initialOrder?.customer_company ?? "");
-  const [customerSaved, setCustomerSaved] = useState(false);
+  const [receiverName, setReceiverName] = useState(
+    initialOrder?.receiver_name ?? seedCustomer?.receiver_name ?? "",
+  );
+  const [receiverPhone, setReceiverPhone] = useState(
+    initialOrder?.receiver_phone ?? seedCustomer?.receiver_phone ?? "",
+  );
+  const [receiverAddress, setReceiverAddress] = useState(
+    initialOrder?.receiver_address ?? seedCustomer?.address ?? "",
+  );
+  const [customerId, setCustomerId] = useState<string>(
+    initialOrder?.customer_id ?? seedCustomer?.id ?? "",
+  );
+  const [customerCompany, setCustomerCompany] = useState(
+    initialOrder?.customer_company ?? seedCustomer?.company_name ?? "",
+  );
+  const [customerSaved, setCustomerSaved] = useState(!!seedCustomer);
   const [projectCode, setProjectCode] = useState(initialOrder?.project_code ?? "");
 
   const [deliveryDate, setDeliveryDate] = useState(initialOrder?.delivery_date ?? "");
@@ -136,7 +172,7 @@ export function PurchaseOrderForm({
             unit: "PCS",
             quantity: "",
             unit_price: "",
-            vat_rate: 8,
+            vat_rate: seedVat,
           },
         ],
   );
@@ -149,12 +185,12 @@ export function PurchaseOrderForm({
           paid: p.status === "paid",
           paid_date: p.paid_date ?? "",
         }))
-      : [
-          { percent: "30", planned_date: "", paid: false, paid_date: "" },
-          { percent: "30", planned_date: "", paid: false, paid_date: "" },
-          { percent: "30", planned_date: "", paid: false, paid_date: "" },
-          { percent: "10", planned_date: "", paid: false, paid_date: "" },
-        ],
+      : seedSchedule.map((pct) => ({
+          percent: String(pct),
+          planned_date: "",
+          paid: false,
+          paid_date: "",
+        })),
   );
 
   const parsedLines = useMemo(
@@ -196,7 +232,7 @@ export function PurchaseOrderForm({
         unit: "PCS",
         quantity: "",
         unit_price: "",
-        vat_rate: 8,
+        vat_rate: seedVat,
       },
     ]);
   }
@@ -726,7 +762,7 @@ export function PurchaseOrderForm({
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {t("paymentMethod")} (4){" "}
+            {t("paymentSchedule", { count: payments.length })}{" "}
             <span className={paySum === 100 ? "text-muted-foreground" : "text-destructive"}>
               · {tc("total")} {formatNumber(paySum, locale)}%
             </span>

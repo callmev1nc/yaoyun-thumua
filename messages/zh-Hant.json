@@ -36,6 +36,7 @@
     "suppliers": "供應商",
     "customers": "客戶",
     "users": "使用者",
+    "settings": "設定",
     "navAria": "導覽選單",
     "brandSubtitle": "採購"
   },
@@ -266,6 +267,20 @@
     "passwordLabel": "密碼 *（至少 6 個字元）",
     "createAccount": "建立帳號",
     "resetPasswordButton": "變更密碼"
+  },
+  "settings": {
+    "title": "設定",
+    "subtitle": "個人偏好設定",
+    "appearance": "外觀",
+    "theme": "主題",
+    "themeLight": "淺色",
+    "themeDark": "深色",
+    "themeSystem": "跟隨系統",
+    "language": "語言",
+    "profile": "個人資料",
+    "displayName": "顯示名稱",
+    "save": "儲存",
+    "saved": "已儲存"
   },
   "toasts": {
     "saved": "已儲存",

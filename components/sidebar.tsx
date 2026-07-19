@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { ClipboardList, Truck, Calculator, Building2, Users, LayoutDashboard, LogOut, Boxes, Menu, X } from "lucide-react";
+import { ClipboardList, Truck, Calculator, Building2, Users, LayoutDashboard, LogOut, Boxes, Menu, X, Settings } from "lucide-react";
 import { signOut } from "@/app/actions";
 import { NavLink } from "@/components/nav-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { UserRole } from "@/types/db";
 
 const NAV: {
@@ -23,6 +24,7 @@ const NAV: {
   { href: "/suppliers", key: "suppliers", icon: Building2 },
   { href: "/customers", key: "customers", icon: Boxes },
   { href: "/admin/users", key: "users", icon: Users, adminOnly: true },
+  { href: "/settings", key: "settings", icon: Settings },
 ];
 
 export function Sidebar({
@@ -86,8 +88,9 @@ export function Sidebar({
             </Badge>
           </div>
         </div>
-        <div className="mb-2">
+        <div className="mb-2 flex items-center gap-1">
           <LanguageSwitcher />
+          <ThemeToggle />
         </div>
         <form action={signOut}>
           <button

@@ -169,6 +169,19 @@ export async function createOrder(input: CreateOrderInput) {
     }
   }
 
+  // Remember last-used values for this user (non-fatal — order is already saved).
+  await supabase
+    .from("profiles")
+    .update({
+      last_supplier_id: input.supplier_id || null,
+      last_customer_id: input.customer_id || null,
+      last_buyer_name: input.buyer_name.trim() || null,
+      last_buyer_phone: input.buyer_phone.trim() || null,
+      default_vat_rate: input.items[0]?.vat_rate ?? null,
+      default_payment_schedule: input.payments.map((p) => p.percent),
+    })
+    .eq("id", ctx.user.id);
+
   revalidatePath("/purchase-orders");
   redirect(`/purchase-orders/${order!.id}`);
 }
