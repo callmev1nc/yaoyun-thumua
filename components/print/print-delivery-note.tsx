@@ -1,9 +1,7 @@
-"use client";
-
-import { useEffect } from "react";
 import type { DeliveryNote, DeliveryItem } from "@/types/db";
 import { formatNumber, formatFormDate } from "@/lib/number-format";
 import type { Locale } from "@/i18n/request";
+import { PrintTrigger } from "@/components/print/print-trigger";
 
 export function PrintDeliveryNote({
   note,
@@ -26,14 +24,10 @@ export function PrintDeliveryNote({
   tVn: (key: string, values?: Record<string, any>) => string;
   locale: Locale;
 }) {
-  useEffect(() => {
-    const t = setTimeout(() => window.print(), 300);
-    return () => clearTimeout(t);
-  }, []);
-
   return (
     <div className="print-page">
       <div className="pp-inner pp-form pp-form2">
+        <PrintTrigger />
         <div className="pp-header">
           <img src="/forms/logo.png" alt={tCn("logoAlt")} className="pp-logo" />
           <div className="pp-company">

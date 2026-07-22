@@ -1,9 +1,7 @@
-"use client";
-
-import { useEffect } from "react";
 import type { PurchaseOrder, OrderItem, PaymentSchedule } from "@/types/db";
 import { formatNumber, formatFormDate } from "@/lib/number-format";
 import type { Locale } from "@/i18n/request";
+import { PrintTrigger } from "@/components/print/print-trigger";
 
 export function PrintPurchaseOrder({
   order,
@@ -22,11 +20,6 @@ export function PrintPurchaseOrder({
   tVn: (key: string, values?: Record<string, any>) => string;
   locale: Locale;
 }) {
-  useEffect(() => {
-    const t = setTimeout(() => window.print(), 300);
-    return () => clearTimeout(t);
-  }, []);
-
   const rates = Array.from(new Set(items.map((i) => i.vat_rate)));
   const vatRate = rates[0] ?? 8;
   const payText =
@@ -45,6 +38,7 @@ export function PrintPurchaseOrder({
   return (
     <div className="print-page">
       <div className="pp-inner pp-form pp-form1">
+        <PrintTrigger />
         <div className="pp-header">
           <img src="/forms/logo.png" alt={tCn("logoAlt")} className="pp-logo" />
           <div className="pp-company">
