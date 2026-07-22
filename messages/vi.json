@@ -336,49 +336,58 @@
   "print": {
     "logoAlt": "logo",
     "company": "CÔNG TY TNHH CÔNG NGHỆ YAOYUN",
-    "supplierInfo": "THÔNG TIN NCC",
-    "code": "Mã đơn",
     "buyer": "NGƯỜI MUA HÀNG",
-    "deliveryAddress": "ĐỊA CHỈ NHẬN HÀNG",
     "paymentMethod": "HÌNH THỨC THANH TOÁN",
     "installment": "Đợt",
-    "note3day": "Lỗi / khiếu nại phát sinh sau khi nhận: thông báo trong vòng 3 ngày kể từ ngày nhận hàng.",
-    "po": {
-      "title": "PHIẾU ĐẶT HÀNG",
-      "reg1": "Hàng mua theo đơn đặt hàng này phải đúng quy cách, chủng loại, số lượng như trên. Bên bán chịu trách nhiệm giao hàng đúng hạn và đảm bảo chất lượng theo thoả thuận.",
-      "reg2": "Bên mua có quyền từ chối nhận hàng nếu hàng không đúng quy cách, chủng loại, số lượng hoặc chất lượng như đã thoả thuận.",
-      "reg3": "Mọi tranh chấp phát sinh từ đơn đặt hàng này sẽ được giải quyết trên cơ sở thương lượng giữa hai bên."
-    },
-    "dn": {
-      "title": "PHIẾU GIAO HÀNG"
-    },
+    "note3day": "Nếu hàng hóa có sự sai khác về quy cách, số lượng, hoặc chất lượng, xin vui lòng thông báo trong vòng ba ngày.",
+    "po": { "title": "PHIẾU ĐẶT HÀNG" },
+    "dn": { "title": "PHIẾU GIAO HÀNG", "colProduct": "DANH MỤC GIAO HÀNG" },
     "col": {
       "no": "TT",
-      "product": "Tên sản phẩm",
-      "unit": "DVT",
+      "product": "DANH MỤC THU MUA",
+      "unit": "ĐVT",
       "qty": "SL",
-      "unitPrice": "D.GIÁ",
+      "unitPrice": "Đ.GIÁ",
       "subtotal": "T.TIỀN CHƯA VAT",
       "vat": "VAT"
     },
-    "totalExclVat": "Tổng tiền chưa thuế",
-    "totalInclVat": "Tổng tiền gồm thuế",
+    "totalExclVat": "Tổng giá (chưa VAT)",
+    "totalVat": "VAT {rate}%",
+    "totalInclVat": "Tổng giá (đã gồm VAT)",
     "sig": {
-      "manager": "CHỦ KÝ CHỦ QUẢN",
-      "buyer": "CHỦ KÝ THU MUA",
-      "customer": "KHÁCH HÀNG",
+      "manager": "CHỮ KÝ CHỦ QUẢN",
+      "buyer": "CHỮ KÝ THU MUA",
+      "customer": "CHỮ KÝ KHÁCH HÀNG",
       "receiver": "KÝ GIAO HÀNG"
     },
     "info": {
-      "delivery": "THÔNG TIN GIAO HÀNG",
-      "owner": "NGƯỜI CHỊU TRÁCH NHIỆM",
+      "poCode": "Số PO",
+      "purchaseDate": "Ngày mua hàng",
+      "supplierInfo": "THÔNG TIN NCC",
+      "supplierContact": "NGƯỜI PHỤ TRÁCH NCC",
+      "receiver": "NGƯỜI NHẬN HÀNG",
+      "receiverAddress": "ĐỊA CHỈ NHẬN HÀNG",
+      "projectCode": "Mã dự án",
+      "supplierPhone": "SĐT NCC",
       "phone": "SĐT",
-      "receiver": "NGƯỜI NHẬN",
-      "dnCode": "MÃ PHIẾU GIAO",
-      "deliveryDate": "NGÀY GIAO",
-      "projectCode": "MÃ DỰ ÁN",
-      "orderCode": "MÃ ĐƠN ĐẶT",
-      "note": "GHI CHÚ"
+      "deliveryTime": "Thời gian giao hàng",
+      "customerInfo": "THÔNG TIN KHÁCH HÀNG",
+      "owner": "NGƯỜI PHỤ TRÁCH",
+      "orderCode": "Số đơn đặt",
+      "dnCode": "Số",
+      "deliveryDate": "Ngày giao hàng"
+    },
+    "reg": {
+      "title": "QUY ĐỊNH HÀNG HÓA",
+      "s1Head": "1. Chất lượng & Quy cách",
+      "s1B1": "- Sản phẩm: Đúng chủng loại, mã hàng (SKU), nhãn hiệu và mô tả trong PO.",
+      "s1B2": "- Tình trạng: Mới 100%, không trầy xước, biến dạng, ẩm mốc hoặc đã qua sử dụng.",
+      "s2Head": "2. Từ chối nhận hàng: Bên mua có quyền trả hàng nếu",
+      "s2B1": "- Sai lệch số lượng so với PO.",
+      "s2B2": "- Hàng lỗi, hư hỏng hoặc sai quy cách.",
+      "s2B3": "- Thiếu chứng từ hợp lệ.",
+      "s3Head": "3. Lỗi phát sinh sau nhập kho",
+      "s3Text": "Trong vòng 3-5 ngày, nếu phát hiện lỗi sản xuất, NCC phải đổi mới hoặc hoàn tiền."
     }
   }
 }

@@ -36,6 +36,28 @@ export function formatDate(input: string | Date | null | undefined, locale: Loca
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
 }
 
+/** Print-only date: zero-padded YYYY年MM月DD日 (CN locales) or DD/MM/YYYY (vi). */
+export function formatFormDate(input: string | Date | null | undefined, locale: Locale = "zh-Hant"): string {
+  if (!input) return ""
+  let d: Date
+  if (typeof input === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+      const [y, m, day] = input.split("-").map(Number)
+      d = new Date(y, m - 1, day)
+    } else {
+      d = new Date(input)
+    }
+  } else {
+    d = input
+  }
+  if (Number.isNaN(d.getTime())) return ""
+  const dd = String(d.getDate()).padStart(2, "0")
+  const mm = String(d.getMonth() + 1).padStart(2, "0")
+  const yyyy = d.getFullYear()
+  if (locale === "vi") return `${dd}/${mm}/${yyyy}`
+  return `${yyyy}年${mm}月${dd}日`
+}
+
 export function parseLooseNumber(raw: string, locale: Locale = "zh-Hant"): number {
   if (raw == null) return NaN
   const s = String(raw).trim().replace(/\s/g, "")

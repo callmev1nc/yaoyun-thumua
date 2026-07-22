@@ -6,10 +6,12 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 const csp = [
   "default-src 'self'",
   "img-src 'self' data: blob:",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://*.vercel.live",
+  "script-src-elem 'self' 'unsafe-inline' https://vercel.live https://*.vercel.live",
   "style-src 'self' 'unsafe-inline'",
-  "connect-src 'self' https://*.supabase.co https://yaoyun.vercel.app",
+  "connect-src 'self' https://*.supabase.co https://yaoyun.vercel.app https://vercel.live https://*.vercel.live",
   "font-src 'self' data: https://fonts.gstatic.com",
+  "frame-src 'self' https://vercel.live https://*.vercel.live",
   "style-src-attr 'unsafe-inline'",
 ].join("; ");
 

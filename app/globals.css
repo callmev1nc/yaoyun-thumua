@@ -148,41 +148,40 @@
   line-height: 1.45;
 }
 
-/* Header */
+/* Header band: logo pinned left, company centered */
 .pp-header {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   border-bottom: 2px solid #111;
-  padding: 0 12mm 8px 12mm;
-  padding-top: 0;
+  padding: 0 12mm 6mm 12mm;
   margin-top: 12mm;
 }
 .pp-logo {
-  height: 26mm;
+  position: absolute;
+  left: 12mm;
+  top: 0;
+  height: 15mm;          /* Form 1 */
   width: auto;
   object-fit: contain;
 }
+.pp-form2 .pp-logo { height: 29mm; }   /* Form 2 logo is larger */
 .pp-company {
-  flex: 1;
   text-align: center;
   font-weight: 600;
 }
-.pp-company .pp-cn {
-  font-size: 14px;
-}
-.pp-title {
-  text-align: center;
-  min-width: 50mm;
-}
-.pp-title-cn {
-  font-size: 13px;
-}
-.pp-title-vn {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
+.pp-company .pp-cn { font-size: 16px; }            /* Form 1 */
+.pp-form2 .pp-company .pp-cn { font-size: 21px; }  /* Form 2 */
+.pp-company-vn { font-size: 12px; font-weight: 700; margin-top: 2px; }
+.pp-form2 .pp-company-vn { font-size: 16px; }
+
+/* Centered title (below the top info bar) */
+.pp-title-center { text-align: center; margin: 5mm 12mm 3mm; }
+.pp-title-center .pp-title-cn { font-size: 13px; font-weight: 700; }
+.pp-title-center .pp-title-vn { font-size: 13px; font-weight: 700; letter-spacing: 1px; margin-top: 2px; }
+.pp-form2 .pp-title-center .pp-title-cn { font-size: 17.5px; }
+.pp-form2 .pp-title-center .pp-title-vn { font-size: 17.5px; }
 
 /* Info block */
 .pp-info {
@@ -208,6 +207,45 @@
 .pp-info .pp-val[colspan="3"] {
   width: 70%;
 }
+
+/* Top info bar (PO code | purchase date  /  DN code | delivery date) */
+.pp-topbar {
+  display: flex;
+  justify-content: space-between;
+  width: calc(100% - 24mm);
+  margin: 4mm 12mm 0;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Two-column info block */
+.pp-info2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: calc(100% - 24mm);
+  margin: 3mm 12mm 0;
+  border: 1px solid #555;
+}
+.pp-info2-left,
+.pp-info2-right { padding: 5px 8px; }
+.pp-info2-left { border-right: 1px solid #999; }
+.pp-info2-field { margin-bottom: 5px; }
+.pp-info2-field .lbl { font-weight: 700; font-size: 10px; }
+.pp-info2-field .val { font-size: 11px; }
+.pp-info2-field .val.pre { white-space: pre-wrap; }
+.pp-info2-inline { font-size: 10px; margin-bottom: 5px; }
+.pp-info2-inline .lbl { font-weight: 700; }
+.pp-info2-inline .val { font-weight: 600; }
+
+/* Payment line (Form 1) */
+.pp-payline {
+  display: flex;
+  gap: 8px;
+  width: calc(100% - 24mm);
+  margin: 3mm 12mm 0;
+  font-size: 11px;
+}
+.pp-payline .lbl { font-weight: 700; white-space: nowrap; }
 
 /* Items table */
 .pp-items {
@@ -279,6 +317,8 @@
   font-size: 10px;
   color: #1e3a5f;
 }
+.pp-note-bar.pp-note-stack { display: block; }
+.pp-note-stack .pp-note-text { display: block; font-size: 10px; color: #1e3a5f; }
 
 /* Terms box — Form 1 "QUY ĐỊNH HÀNG HÓA" */
 .pp-terms {
@@ -301,6 +341,9 @@
   font-size: 9px;
   margin: 2px 0 0;
 }
+.pp-terms-list { display: block; }
+.pp-terms-list .pp-sec-head { font-weight: 700; font-size: 10px; margin: 4px 0 1px; }
+.pp-terms-list .pp-bullet { font-size: 9px; margin: 1px 0 1px 8px; line-height: 1.4; }
 
 /* Signatures */
 .pp-sign {

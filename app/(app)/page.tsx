@@ -19,7 +19,6 @@ import type { PurchaseOrder, SpendBySupplierRow, OrderStatus } from "@/types/db"
 const ICONS = [ShoppingCart, Truck, TrendingUp, AlertCircle] as const;
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
   const t = await getTranslations("dashboard");
   const tc = await getTranslations("common");
   const tn = await getTranslations("nav");
@@ -32,60 +31,76 @@ export default async function DashboardPage() {
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString();
   const sevenDaysLater = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7).toISOString().slice(0, 10);
 
-  const [orderCountRes, ledgerRes, dnRes, needPayRes, recentOrdersRes, paySummaryRes, spendBySupplierRes, spend6moRes, upcomingDeliveriesRes] = await Promise.all([
-    supabase
-      .from("purchase_orders")
-      .select("*", { count: "exact", head: true })
-      .gte("created_at", monthStart),
-    supabase
-      .from("purchase_orders")
-      .select("grand_total"),
-    supabase
-      .from("delivery_notes")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "delivered")
-      .gte("created_at", monthStart),
-    supabase
-      .from("payment_schedules")
-      .select("amount, planned_date, order_id, purchase_orders!inner(status)")
-      .eq("status", "unpaid")
-      .not("planned_date", "is", null)
-      .lte("planned_date", sevenDaysLater),
-    supabase
-      .from("purchase_orders")
-      .select("id, order_code, project_code, po_code, supplier_company, grand_total, status, created_at")
-      .order("created_at", { ascending: false })
-      .limit(5),
-    supabase
-      .from("payment_schedules")
-      .select("amount, status")
-      .eq("status", "paid"),
-    supabase
-      .from("v_spend_by_supplier")
-      .select("*")
-      .order("total_spend", { ascending: false })
-      .limit(5),
-    supabase
-      .from("purchase_orders")
-      .select("grand_total, created_at")
-      .gte("created_at", sixMonthsAgo),
-    supabase
-      .from("purchase_orders")
-      .select("id, order_code, project_code, po_code, supplier_company, delivery_date, status")
-      .eq("status", "confirmed")
-      .gte("delivery_date", today)
-      .lte("delivery_date", sevenDaysLater)
-      .order("delivery_date"),
-  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const empty: any = { data: null, count: 0 };
+  let orderCountRes: any = empty;
+  let ledgerRes: any = empty;
+  let dnRes: any = empty;
+  let needPayRes: any = empty;
+  let recentOrdersRes: any = empty;
+  let paySummaryRes: any = empty;
+  let spendBySupplierRes: any = empty;
+  let spend6moRes: any = empty;
+  let upcomingDeliveriesRes: any = empty;
+  try {
+    const supabase = await createClient();
+    [orderCountRes, ledgerRes, dnRes, needPayRes, recentOrdersRes, paySummaryRes, spendBySupplierRes, spend6moRes, upcomingDeliveriesRes] = await Promise.all([
+      supabase
+        .from("purchase_orders")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", monthStart),
+      supabase
+        .from("purchase_orders")
+        .select("grand_total"),
+      supabase
+        .from("delivery_notes")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "delivered")
+        .gte("created_at", monthStart),
+      supabase
+        .from("payment_schedules")
+        .select("amount, planned_date, order_id, purchase_orders!inner(status)")
+        .eq("status", "unpaid")
+        .not("planned_date", "is", null)
+        .lte("planned_date", sevenDaysLater),
+      supabase
+        .from("purchase_orders")
+        .select("id, order_code, project_code, po_code, supplier_company, grand_total, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("payment_schedules")
+        .select("amount, status")
+        .eq("status", "paid"),
+      supabase
+        .from("v_spend_by_supplier")
+        .select("*")
+        .order("total_spend", { ascending: false })
+        .limit(5),
+      supabase
+        .from("purchase_orders")
+        .select("grand_total, created_at")
+        .gte("created_at", sixMonthsAgo),
+      supabase
+        .from("purchase_orders")
+        .select("id, order_code, project_code, po_code, supplier_company, delivery_date, status")
+        .eq("status", "confirmed")
+        .gte("delivery_date", today)
+        .lte("delivery_date", sevenDaysLater)
+        .order("delivery_date"),
+    ]);
+  } catch {
+    // keep empty defaults — dashboard renders with zeros
+  }
 
   const monthOrders = orderCountRes.count ?? 0;
   const monthDeliveries = dnRes.count ?? 0;
   const totalNeedPay = (ledgerRes.data ?? []).reduce(
-    (s, r) => s + Number((r as { grand_total: number }).grand_total),
+    (s: number, r: { grand_total: number }) => s + Number(r.grand_total),
     0,
   );
   const totalPaid = (paySummaryRes.data ?? []).reduce(
-    (s, r) => s + Number((r as { amount: number }).amount),
+    (s: number, r: { amount: number }) => s + Number(r.amount),
     0,
   );
   const payRatio = totalNeedPay > 0 ? Math.round((totalPaid / totalNeedPay) * 100) : 0;

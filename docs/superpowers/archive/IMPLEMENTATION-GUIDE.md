@@ -1,5 +1,7 @@
 # Hướng dẫn tự implement phần còn lại
 
+> ⚠️ **ĐÃ LỖI THỜI — guide build cũ (lưu 2026-07-21).** Phase 5–7 dưới đây **đã ship hết**. Pattern mã phiếu giao trong file này (`DN…`, `count+1`, `padStart 4`) **đã cũ và sai** — code thật (`lib/actions/delivery.ts`) dùng `GH{year}{seq}` + `like(prefix%)` + `padStart(5)`. Chỉ giữ để tham khảo lịch sử; đừng copy code mẫu. Xem `docs/FEATURES.md` cho hiện trạng Delivery/Ledger/Admin.
+
 App đã chạy được (login, suppliers, tạo ĐH, tính tiền đúng). Bạn tự làm Phase 5→7 theo guide này; mình fix/debug sau. Mọi pattern đều có sẵn file mẫu — copy rồi đổi.
 
 ## Lệnh thường dùng

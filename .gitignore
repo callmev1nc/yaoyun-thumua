@@ -45,3 +45,10 @@ next-env.d.ts
 # temp / docs not for repo
 unpacked/
 *.docx
+
+# AI / agent reference docs — local only, kept for reading & future tasks, NOT committed
+docs/ARCHITECTURE.md
+docs/DATABASE.md
+docs/FEATURES.md
+docs/DEVELOPMENT.md
+docs/GOTCHAS.md

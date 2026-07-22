@@ -10,10 +10,22 @@ export interface AuthContext {
 
 /** Current session + profile, or null if not logged in. */
 export async function getCurrentUser(): Promise<AuthContext | null> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let supabase
+  try {
+    supabase = await createClient()
+  } catch {
+    // Env misconfigured or Supabase unreachable — treat as logged out so the
+    // request degrades to a /login redirect instead of crashing the render.
+    return null
+  }
+
+  let user: { id: string; email?: string | null } | null | undefined
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch {
+    return null
+  }
   if (!user) return null
 
   const { data: profile } = await supabase

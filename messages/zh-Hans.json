@@ -336,22 +336,12 @@
   "print": {
     "logoAlt": "logo",
     "company": "曜云科技有限公司",
-    "supplierInfo": "供应商信息",
-    "code": "单号",
     "buyer": "采购人",
-    "deliveryAddress": "收货地址",
-    "paymentMethod": "付款方式",
+    "paymentMethod": "付款条件",
     "installment": "期",
-    "note3day": "收货后若有错误/争议，请于收货日起 3 日内通知。",
-    "po": {
-      "title": "采购单",
-      "reg1": "本采购单之商品须符合上述规格、型号、数量。卖方应依约准时交货并确保品质。",
-      "reg2": "若商品不符合约定规格、型号、数量或品质，买方有权拒绝收货。",
-      "reg3": "因本采购单所生之争议，应由双方协商解决。"
-    },
-    "dn": {
-      "title": "交货单"
-    },
+    "note3day": "备注：货品若有规格、数量品质不符情形时，请于三日提出。",
+    "po": { "title": "采购单" },
+    "dn": { "title": "交货单", "colProduct": "交货项目" },
     "col": {
       "no": "序",
       "product": "采购项目",
@@ -361,24 +351,43 @@
       "subtotal": "小计",
       "vat": "税额"
     },
-    "totalExclVat": "总价（未税）为",
-    "totalInclVat": "总价（含税）为",
+    "totalExclVat": "总价(未税)为",
+    "totalVat": "VAT{rate}%为",
+    "totalInclVat": "总价(已含税)为",
     "sig": {
       "manager": "主管签名",
       "buyer": "采购签名",
       "customer": "客户签名",
-      "receiver": "签收"
+      "receiver": "交货人签名"
     },
     "info": {
-      "delivery": "交货信息",
-      "owner": "负责人",
-      "phone": "电话",
+      "poCode": "采购编号",
+      "purchaseDate": "购物日期",
+      "supplierInfo": "厂商信息",
+      "supplierContact": "负责人",
       "receiver": "收货人",
-      "dnCode": "交货单号",
-      "deliveryDate": "交货日期",
-      "projectCode": "项目号",
-      "orderCode": "订单号",
-      "note": "备注"
+      "receiverAddress": "收货地址",
+      "projectCode": "订单编号",
+      "supplierPhone": "手机号码",
+      "phone": "手机号码",
+      "deliveryTime": "交货时间",
+      "customerInfo": "客户信息",
+      "owner": "负责人",
+      "orderCode": "订单编号",
+      "dnCode": "号",
+      "deliveryDate": "交货日期"
+    },
+    "reg": {
+      "title": "货物规定",
+      "s1Head": "(质量与规格)",
+      "s1B1": "产品：符合订购单(PO)之品项、货号(SKU)、品牌及规格描述。",
+      "s1B2": "状态：100%全新，无划痕、变形、发霉或使用痕迹。",
+      "s2Head": "拒收规定：买方有权退货，若发生以下情况：",
+      "s2B1": "数量与订购单不符。",
+      "s2B2": "货物缺陷、损坏或规格不符。",
+      "s2B3": "缺乏有效单据。",
+      "s3Head": "入库后发现缺陷",
+      "s3Text": "3-5个工作日内，若发现生产缺陷，供应商须负责换新或退款。"
     }
   }
 }

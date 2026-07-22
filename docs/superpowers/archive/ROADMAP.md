@@ -1,5 +1,7 @@
 # Kế hoạch hoàn thiện — Yaoyun Thu Mua
 
+> ⚠️ **ĐÃ LỖI THỜI — bản chụp lịch sử (lưu 2026-07-21).** Roadmap này viết giữa lúc đang xây, liệt kê Phase 4–7 là "việc còn lại". Các phase đó **đã hoàn thành & verify** (xem `docs/FEATURES.md`). Bug chặn `export type { LineInput }` cũng đã fix xong. Chỉ giữ lại làm lịch sử dự án — đừng dùng làm danh sách việc hiện tại.
+
 Trạng thái: **đang xây dựng** · Stack: Next.js 16 + Supabase + Vercel
 Project Supabase: `yaoyun-thumua` (ap-southeast-1) · Tài khoản test: `admin@yaoyun.vn / <rotated-strong-password>`
 
