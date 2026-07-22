@@ -148,26 +148,30 @@
   line-height: 1.45;
 }
 
-/* Header band: logo pinned left, company centered */
+/* Header band: logo pinned to the top-left corner, company centered.
+   3-track grid so the logo and the centered company name can never
+   overlap or overflow into the rows below (a previous absolute logo
+   taller than the band bled over the title). */
 .pp-header {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: center;
   border-bottom: 2px solid #111;
   padding: 0 12mm 6mm 12mm;
   margin-top: 12mm;
 }
 .pp-logo {
-  position: absolute;
-  left: 12mm;
-  top: 0;
-  height: 15mm;          /* Form 1 */
+  grid-column: 1;
+  justify-self: start;
+  align-self: start;        /* pins logo to the TOP-left corner */
+  height: 15mm;             /* Form 1 */
   width: auto;
   object-fit: contain;
 }
 .pp-form2 .pp-logo { height: 29mm; }   /* Form 2 logo is larger */
 .pp-company {
+  grid-column: 2;
   text-align: center;
   font-weight: 600;
 }
