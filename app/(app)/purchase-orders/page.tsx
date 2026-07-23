@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ClipboardList } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { POStatusBadge } from "@/components/po-status-badge";
 import { EmptyState } from "@/components/empty-state";
 
@@ -89,7 +89,6 @@ export default async function PurchaseOrdersPage({
           <TableBody>
             {orders.length === 0 && (
               <EmptyState
-                icon={ClipboardList}
                 title={t("empty")}
                 description={t("emptyHint")}
                 colSpan={10}

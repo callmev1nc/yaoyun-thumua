@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
-import { Search, Truck } from "lucide-react";
+import { Search } from "lucide-react";
 
 export default async function DeliveryNotesPage({
   searchParams,
@@ -86,7 +86,6 @@ export default async function DeliveryNotesPage({
           <TableBody>
             {notes.length === 0 && (
               <EmptyState
-                icon={Truck}
                 title={t("empty")}
                 description={t("emptyHint")}
                 colSpan={9}
