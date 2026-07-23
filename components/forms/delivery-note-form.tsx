@@ -44,7 +44,7 @@ export function DeliveryNoteForm({
 }: {
   order: PurchaseOrder;
   items: OrderItem[];
-  deliveredByItem: Map<string, number>;
+  deliveredByItem: Record<string, number>;
   customerName?: string;
   mode?: "create" | "edit";
   initialNote?: DeliveryNote;
@@ -78,7 +78,7 @@ export function DeliveryNoteForm({
     if (isEdit && initialItems) {
       return initialItems.map((it) => {
         const oi = items.find((x) => x.id === it.order_item_id);
-        const already = deliveredByItem.get(it.order_item_id) ?? 0;
+        const already = deliveredByItem[it.order_item_id] ?? 0;
         const orderedQty = oi ? Number(oi.quantity) : 0;
         const alreadyWithoutThis = already - Number(it.delivered_qty);
         return {
@@ -93,7 +93,7 @@ export function DeliveryNoteForm({
       });
     }
     return items.map((it) => {
-      const already = deliveredByItem.get(it.id) ?? 0;
+      const already = deliveredByItem[it.id] ?? 0;
       const remaining = Number(it.quantity) - already;
       return {
         order_item_id: it.id,

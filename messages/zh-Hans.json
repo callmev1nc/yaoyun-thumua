@@ -297,6 +297,7 @@
   },
   "errors": {
     "notLoggedIn": "尚未登录",
+    "orderHasDeliveries": "无法删除订单：此订单已有交货单。请先删除所有相关交货单，再删除订单。",
     "invalidData": "数据无效",
     "needOneItem": "至少需要 1 项产品",
     "orderNotFound": "找不到采购单",

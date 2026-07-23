@@ -64,7 +64,7 @@ export default async function NewDeliveryNotePage({
     <DeliveryNoteForm
       order={po}
       items={items}
-      deliveredByItem={deliveredByItem}
+      deliveredByItem={Object.fromEntries(deliveredByItem)}
       customerName={customerName}
     />
   );

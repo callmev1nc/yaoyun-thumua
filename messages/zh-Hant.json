@@ -297,6 +297,7 @@
   },
   "errors": {
     "notLoggedIn": "尚未登入",
+    "orderHasDeliveries": "無法刪除訂單：此訂單已有交貨單。請先刪除所有相關交貨單，再刪除訂單。",
     "invalidData": "資料無效",
     "needOneItem": "至少需要 1 項產品",
     "orderNotFound": "找不到採購單",

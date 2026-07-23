@@ -191,6 +191,14 @@ export async function deleteOrder(id: string) {
   const t = await getTranslations("errors");
   if (!ctx) return { error: t("notLoggedIn") };
   const supabase = await createClient();
+
+  // Block deletion if any delivery note exists for this order (any status).
+  const { count } = await supabase
+    .from("delivery_notes")
+    .select("id", { count: "exact", head: true })
+    .eq("order_id", id);
+  if ((count ?? 0) > 0) return { error: t("orderHasDeliveries") };
+
   const { error } = await supabase.from("purchase_orders").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/purchase-orders");

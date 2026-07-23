@@ -297,6 +297,7 @@
   },
   "errors": {
     "notLoggedIn": "Chưa đăng nhập",
+    "orderHasDeliveries": "Không thể xóa đơn đặt hàng: đơn này đã có phiếu giao hàng. Vui lòng xóa tất cả phiếu giao hàng liên quan trước khi xóa đơn.",
     "invalidData": "Dữ liệu không hợp lệ",
     "needOneItem": "Phải có ít nhất 1 dòng sản phẩm",
     "orderNotFound": "Không tìm thấy đơn hàng",

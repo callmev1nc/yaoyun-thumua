@@ -71,7 +71,7 @@ export default async function EditDeliveryNotePage({
     <DeliveryNoteForm
       order={po}
       items={orderItems}
-      deliveredByItem={deliveredByItem}
+      deliveredByItem={Object.fromEntries(deliveredByItem)}
       customerName={customerName}
       mode="edit"
       initialNote={dn}

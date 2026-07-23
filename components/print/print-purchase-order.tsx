@@ -32,7 +32,7 @@ export function PrintPurchaseOrder({
           .join(" · ")
       : "—";
 
-  const money = (n: number | null | undefined) => `(${formatNumber(n, "vi")})`;
+  const money = (n: number | null | undefined) => formatNumber(n, "vi");
   const projectName = order.customer_company ?? "";
 
   return (
