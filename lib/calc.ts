@@ -20,7 +20,7 @@ export function vnd(n: number): number {
 export interface LineInput {
   quantity: number
   unit_price: number
-  vat_rate: number // 8 | 10
+  vat_rate: number // 0 | 8 | 10
 }
 
 /** Thành tiền (gross) = quantity × unit_price. */
@@ -86,5 +86,5 @@ export function remainingQty(ordered: number, deliveredTotal: number): number {
 }
 
 /** VAT rate choices exposed in the UI. */
-export const VAT_RATES = [8, 10] as const
+export const VAT_RATES = [0, 8, 10] as const
 export type VatRate = (typeof VAT_RATES)[number]

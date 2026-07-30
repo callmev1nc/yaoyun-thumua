@@ -182,7 +182,7 @@ Never use `createAdminClient()` for regular user operations — it bypasses RLS 
 ## Common Reference Data
 
 ### VAT rates
-`VAT_RATES = [8, 10]` (defined in `lib/calc.ts`). 8% is the default. Only these two values are valid — the DB check constraint enforces it.
+`VAT_RATES = [0, 8, 10]` (defined in `lib/calc.ts`). 8% is the default. 0% is allowed (export / non-taxable items) — the DB CHECK constraint (migration `0011`) permits all three.
 
 ### Order statuses
 `"draft"` → `"confirmed"` → `"closed"` (one-way progression in practice, though not enforced by DB)

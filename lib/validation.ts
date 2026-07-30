@@ -23,7 +23,7 @@ export const createOrderSchema = z.object({
         unit: z.string().max(30),
         quantity: z.number().min(0),
         unit_price: z.number().min(0),
-        vat_rate: z.union([z.literal(8), z.literal(10)]),
+        vat_rate: z.union([z.literal(0), z.literal(8), z.literal(10)]),
       }),
     )
     .min(1),
@@ -61,7 +61,7 @@ export const updateOrderSchema = z.object({
         unit: z.string().max(30),
         quantity: z.number().min(0),
         unit_price: z.number().min(0),
-        vat_rate: z.union([z.literal(8), z.literal(10)]),
+        vat_rate: z.union([z.literal(0), z.literal(8), z.literal(10)]),
       }),
     )
     .min(1),
@@ -149,7 +149,7 @@ export const createProductSchema = z.object({
   sku: z.string().max(50).nullable().optional(),
   default_unit: z.string().max(30).nullable().optional(),
   default_price: z.number().min(0),
-  default_vat_rate: z.union([z.literal(8), z.literal(10)]),
+  default_vat_rate: z.union([z.literal(0), z.literal(8), z.literal(10)]),
   note: z.string().max(500).nullable().optional(),
 })
 
@@ -158,7 +158,7 @@ export const updateProductSchema = z.object({
   sku: z.string().max(50).nullable().optional(),
   default_unit: z.string().max(30).nullable().optional(),
   default_price: z.number().min(0),
-  default_vat_rate: z.union([z.literal(8), z.literal(10)]),
+  default_vat_rate: z.union([z.literal(0), z.literal(8), z.literal(10)]),
   note: z.string().max(500).nullable().optional(),
 })
 

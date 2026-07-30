@@ -109,7 +109,7 @@ export function PurchaseOrderForm({
     : undefined;
   const rawSched = d?.default_payment_schedule;
   const seedSchedule = Array.isArray(rawSched) && rawSched.length > 0 ? rawSched : [30, 30, 30, 10];
-  const seedVat = d?.default_vat_rate === 8 || d?.default_vat_rate === 10 ? d.default_vat_rate : 8;
+  const seedVat = d?.default_vat_rate === 0 || d?.default_vat_rate === 8 || d?.default_vat_rate === 10 ? d.default_vat_rate : 8;
 
   const [supplierId, setSupplierId] = useState<string>(
     initialOrder?.supplier_id ?? seedSupplier?.id ?? "",
@@ -704,6 +704,7 @@ export function PurchaseOrderForm({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="0">0%</SelectItem>
                             <SelectItem value="8">8%</SelectItem>
                             <SelectItem value="10">10%</SelectItem>
                           </SelectContent>
