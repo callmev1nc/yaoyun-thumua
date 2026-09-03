@@ -131,7 +131,11 @@ export default async function PurchaseOrderDetailPage({
             <Row label={t("supplierPhone")} value={po.supplier_phone} />
             <Row label={tcu("title")} value={po.customer_company} />
             <Row label={t("projectCode")} value={po.project_code} />
-            <Row label={t("orderCode")} value={po.po_code} />
+            <Row
+              label={t("orderCode")}
+              value={po.po_code}
+              hint={po.po_code ? t("orderCodeHint") : undefined}
+            />
           </CardContent>
         </Card>
         <Card>
@@ -279,11 +283,22 @@ export default async function PurchaseOrderDetailPage({
   );
 }
 
-function Row({ label, value }: { label: string; value?: string | null }) {
+function Row({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value?: string | null;
+  hint?: string;
+}) {
   return (
-    <div className="flex gap-2">
-      <span className="w-32 shrink-0 text-muted-foreground">{label}</span>
-      <span>{value || "—"}</span>
+    <div className="space-y-0.5">
+      <div className="flex gap-2">
+        <span className="w-32 shrink-0 text-muted-foreground">{label}</span>
+        <span>{value || "—"}</span>
+      </div>
+      {hint && <p className="pl-32 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { ClipboardList, Truck, Calculator, Building2, Users, LayoutDashboard, LogOut, Boxes, Menu, X, Settings } from "lucide-react";
+import { ClipboardList, Truck, Calculator, Building2, Users, LayoutDashboard, LogOut, Boxes, Menu, X, Settings, UserRound } from "lucide-react";
 import { signOut } from "@/app/actions";
 import { NavLink } from "@/components/nav-link";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ const NAV: {
   { href: "/ledger", key: "ledger", icon: Calculator },
   { href: "/suppliers", key: "suppliers", icon: Building2 },
   { href: "/customers", key: "customers", icon: Boxes },
+  { href: "/buyers", key: "buyers", icon: UserRound },
   { href: "/admin/users", key: "users", icon: Users, adminOnly: true },
   { href: "/settings", key: "settings", icon: Settings },
 ];

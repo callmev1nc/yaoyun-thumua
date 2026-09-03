@@ -35,6 +35,7 @@
     "ledger": "结算表",
     "suppliers": "供应商",
     "customers": "客户",
+    "buyers": "采购人",
     "users": "用户",
     "settings": "设置",
     "navAria": "导航菜单",
@@ -106,6 +107,7 @@
     "code": "单号",
     "poCode": "PO 号",
     "orderCode": "订单号",
+    "orderCodeHint": "同一项目内的流水号，同项目订单共用相同前缀、末位依次递增，并非重复的旧编号。",
     "supplierCompany": "供应商公司名称",
     "supplierContact": "供应商负责人",
     "supplierPhone": "供应商电话",
@@ -250,6 +252,16 @@
     "receiverPhone": "收货人电话",
     "emptyDescription": "新增第一个客户以开始。"
   },
+  "buyers": {
+    "title": "采购人",
+    "add": "新增采购人",
+    "empty": "暂无采购人",
+    "subtitle": "采购人通讯录 — 创建采购单时可重复使用",
+    "name": "采购人姓名",
+    "phone": "电话",
+    "dialogDescription": "此信息将于创建采购单时使用。",
+    "emptyHint": "新增第一个采购人以开始。"
+  },
   "users": {
     "title": "用户管理",
     "create": "创建用户",
@@ -290,9 +302,13 @@
     "created": "已创建",
     "deleted": "已删除",
     "supplierSaved": "已将供应商加入通讯录",
+    "supplierSaveHint": "将此供应商加入通讯录",
     "buyerSaved": "已将采购人加入通讯录",
+    "buyerSaveHint": "将此采购人加入通讯录",
     "receiverSaved": "已更新收货信息",
+    "receiverSaveHint": "将此客户信息加入通讯录",
     "productSaved": "已将产品加入品项清单",
+    "productSaveHint": "将此产品加入品项清单",
     "roleChanged": "已更改角色",
     "passwordReset": "已重置密码",
     "userCreated": "已创建用户"
@@ -324,14 +340,16 @@
     "minString": "至少 {min} 个字符",
     "invalidEnum": "无效的值",
     "invalidEmail": "电子邮件格式不正确",
-    "companyName": "请输入公司名称"
+    "companyName": "请输入公司名称",
+    "buyerName": "请输入采购人姓名"
   },
   "confirm": {
     "deleteOrder": "删除此采购单？此操作无法撤销。",
     "deleteDn": "删除此交货单？",
-    "duplicate": "复制为新的草稿单？",
+    "duplicate": "复制为新的草稿单？新单将获得专属订单号，并沿用同一项目的 PO 序号。",
     "deleteCustomer": "删除客户“{name}”？",
     "deleteSupplier": "删除供应商“{name}”？",
+    "deleteBuyer": "删除采购人“{name}”？",
     "changeRole": "将此用户的角色更改为“{role}”？",
     "promptNewPassword": "请输入新密码（至少 6 个字符）：",
     "confirmResetPassword": "确认重置此用户的密码？"

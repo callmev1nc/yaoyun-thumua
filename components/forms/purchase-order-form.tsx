@@ -6,7 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Trash2, Loader2, Bookmark, BookmarkCheck, Pencil } from "lucide-react";
-import type { Supplier, Customer, Product, Buyer, OrderStatus, PurchaseOrder, OrderItem, PaymentSchedule, ProfileDefaults } from "@/types/db";
+import type { Supplier, Customer, Product, Buyer, OrderStatus, PurchaseOrder, OrderItem, PaymentSchedule } from "@/types/db";
 import {
   createOrder,
   updateOrder,
@@ -63,6 +63,9 @@ interface PaymentRow {
 let keySeq = 0;
 const newKey = () => `l${++keySeq}`;
 
+const DEFAULT_VAT_RATE = 8;
+const DEFAULT_PAYMENT_SCHEDULE = [30, 30, 30, 10];
+
 export function PurchaseOrderForm({
   suppliers,
   customers,
@@ -73,7 +76,6 @@ export function PurchaseOrderForm({
   initialOrder,
   initialItems,
   initialPayments,
-  initialDefaults,
 }: {
   suppliers: Supplier[];
   customers: Customer[];
@@ -84,7 +86,6 @@ export function PurchaseOrderForm({
   initialOrder?: PurchaseOrder;
   initialItems?: OrderItem[];
   initialPayments?: PaymentSchedule[];
-  initialDefaults?: ProfileDefaults;
 }) {
   const [pending, startTransition] = useTransition();
   const [tickPending, startTick] = useTransition();
@@ -99,55 +100,21 @@ export function PurchaseOrderForm({
   const tpay = useTranslations("status.payment");
   const locale = useLocale() as Locale;
 
-  // --- smart defaults: resolve last-used values (CREATE mode only) ---
-  const d = !isEdit ? initialDefaults : undefined;
-  const seedSupplier = d?.last_supplier_id
-    ? suppliers.find((s) => s.id === d.last_supplier_id)
-    : undefined;
-  const seedCustomer = d?.last_customer_id
-    ? customers.find((c) => c.id === d.last_customer_id)
-    : undefined;
-  const rawSched = d?.default_payment_schedule;
-  const seedSchedule = Array.isArray(rawSched) && rawSched.length > 0 ? rawSched : [30, 30, 30, 10];
-  const seedVat = d?.default_vat_rate === 0 || d?.default_vat_rate === 8 || d?.default_vat_rate === 10 ? d.default_vat_rate : 8;
+  const [supplierId, setSupplierId] = useState<string>(initialOrder?.supplier_id ?? "");
+  const [supplierCompany, setSupplierCompany] = useState(initialOrder?.supplier_company ?? "");
+  const [supplierContact, setSupplierContact] = useState(initialOrder?.supplier_contact ?? "");
+  const [supplierPhone, setSupplierPhone] = useState(initialOrder?.supplier_phone ?? "");
 
-  const [supplierId, setSupplierId] = useState<string>(
-    initialOrder?.supplier_id ?? seedSupplier?.id ?? "",
-  );
-  const [supplierCompany, setSupplierCompany] = useState(
-    initialOrder?.supplier_company ?? seedSupplier?.company_name ?? "",
-  );
-  const [supplierContact, setSupplierContact] = useState(
-    initialOrder?.supplier_contact ?? seedSupplier?.contact_person ?? "",
-  );
-  const [supplierPhone, setSupplierPhone] = useState(
-    initialOrder?.supplier_phone ?? seedSupplier?.phone ?? "",
-  );
-
-  const [buyerName, setBuyerName] = useState(
-    initialOrder?.buyer_name ?? seedCustomer?.contact_name ?? d?.last_buyer_name ?? currentUserName,
-  );
-  const [buyerPhone, setBuyerPhone] = useState(
-    initialOrder?.buyer_phone ?? seedCustomer?.phone ?? d?.last_buyer_phone ?? "",
-  );
+  const [buyerName, setBuyerName] = useState(initialOrder?.buyer_name ?? currentUserName);
+  const [buyerPhone, setBuyerPhone] = useState(initialOrder?.buyer_phone ?? "");
   const [buyerId, setBuyerId] = useState<string>("");
 
-  const [receiverName, setReceiverName] = useState(
-    initialOrder?.receiver_name ?? seedCustomer?.receiver_name ?? "",
-  );
-  const [receiverPhone, setReceiverPhone] = useState(
-    initialOrder?.receiver_phone ?? seedCustomer?.receiver_phone ?? "",
-  );
-  const [receiverAddress, setReceiverAddress] = useState(
-    initialOrder?.receiver_address ?? seedCustomer?.address ?? "",
-  );
-  const [customerId, setCustomerId] = useState<string>(
-    initialOrder?.customer_id ?? seedCustomer?.id ?? "",
-  );
-  const [customerCompany, setCustomerCompany] = useState(
-    initialOrder?.customer_company ?? seedCustomer?.company_name ?? "",
-  );
-  const [customerSaved, setCustomerSaved] = useState(!!seedCustomer);
+  const [receiverName, setReceiverName] = useState(initialOrder?.receiver_name ?? "");
+  const [receiverPhone, setReceiverPhone] = useState(initialOrder?.receiver_phone ?? "");
+  const [receiverAddress, setReceiverAddress] = useState(initialOrder?.receiver_address ?? "");
+  const [customerId, setCustomerId] = useState<string>(initialOrder?.customer_id ?? "");
+  const [customerCompany, setCustomerCompany] = useState(initialOrder?.customer_company ?? "");
+  const [customerSaved, setCustomerSaved] = useState(false);
   const [projectCode, setProjectCode] = useState(initialOrder?.project_code ?? "");
 
   const [deliveryDate, setDeliveryDate] = useState(initialOrder?.delivery_date ?? "");
@@ -172,7 +139,7 @@ export function PurchaseOrderForm({
             unit: "PCS",
             quantity: "",
             unit_price: "",
-            vat_rate: seedVat,
+            vat_rate: DEFAULT_VAT_RATE,
           },
         ],
   );
@@ -185,7 +152,7 @@ export function PurchaseOrderForm({
           paid: p.status === "paid",
           paid_date: p.paid_date ?? "",
         }))
-      : seedSchedule.map((pct) => ({
+      : DEFAULT_PAYMENT_SCHEDULE.map((pct) => ({
           percent: String(pct),
           planned_date: "",
           paid: false,
@@ -232,7 +199,7 @@ export function PurchaseOrderForm({
         unit: "PCS",
         quantity: "",
         unit_price: "",
-        vat_rate: seedVat,
+        vat_rate: DEFAULT_VAT_RATE,
       },
     ]);
   }
@@ -249,6 +216,31 @@ export function PurchaseOrderForm({
         unit_price: String(match.default_price),
         vat_rate: match.default_vat_rate,
       });
+    }
+  }
+
+  function handleSupplierCompanyChange(value: string) {
+    setSupplierCompany(value);
+    const match = suppliers.find((s) => s.company_name.trim().toLowerCase() === value.trim().toLowerCase());
+    if (match) {
+      setSupplierId(match.id);
+      setSupplierContact(match.contact_person ?? "");
+      setSupplierPhone(match.phone ?? "");
+    }
+  }
+
+  function handleCustomerCompanyChange(value: string) {
+    setCustomerCompany(value);
+    setCustomerSaved(false);
+    const match = customers.find((c) => c.company_name.trim().toLowerCase() === value.trim().toLowerCase());
+    if (match) {
+      setCustomerId(match.id);
+      setBuyerName(match.contact_name ?? buyerName);
+      setBuyerPhone(match.phone ?? buyerPhone);
+      setReceiverName(match.receiver_name ?? "");
+      setReceiverPhone(match.receiver_phone ?? "");
+      setReceiverAddress(match.address ?? "");
+      setCustomerSaved(true);
     }
   }
 
@@ -484,7 +476,16 @@ export function PurchaseOrderForm({
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-1.5">
                 <Label>{t("supplierCompany")}</Label>
-                <Input value={supplierCompany} onChange={(e) => setSupplierCompany(e.target.value)} />
+                <datalist id="supplier-suggestions">
+                  {suppliers.map((s) => (
+                    <option key={s.id} value={s.company_name} />
+                  ))}
+                </datalist>
+                <Input
+                  list="supplier-suggestions"
+                  value={supplierCompany}
+                  onChange={(e) => handleSupplierCompanyChange(e.target.value)}
+                />
               </div>
               <Button
                 type="button"
@@ -492,7 +493,7 @@ export function PurchaseOrderForm({
                 size="icon"
                 disabled={tickPending || !supplierCompany.trim() || isSupplierSaved}
                 onClick={handleSaveSupplier}
-                title={tt("supplierSaved")}
+                title={isSupplierSaved ? tt("supplierSaved") : tt("supplierSaveHint")}
               >
                 {isSupplierSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
               </Button>
@@ -530,7 +531,7 @@ export function PurchaseOrderForm({
                 size="icon"
                 disabled={tickPending || !buyerName.trim() || isBuyerSaved}
                 onClick={handleSaveBuyer}
-                title={tt("buyerSaved")}
+                title={isBuyerSaved ? tt("buyerSaved") : tt("buyerSaveHint")}
               >
                 {isBuyerSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
               </Button>
@@ -575,7 +576,17 @@ export function PurchaseOrderForm({
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-1.5">
                 <Label>{t("customerCompany")}</Label>
-                <Input value={customerCompany} onChange={(e) => { setCustomerCompany(e.target.value); setCustomerSaved(false); }} placeholder={t("customerCompanyPlaceholder")} />
+                <datalist id="customer-suggestions">
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.company_name} />
+                  ))}
+                </datalist>
+                <Input
+                  list="customer-suggestions"
+                  value={customerCompany}
+                  onChange={(e) => handleCustomerCompanyChange(e.target.value)}
+                  placeholder={t("customerCompanyPlaceholder")}
+                />
               </div>
               <Button
                 type="button"
@@ -583,7 +594,7 @@ export function PurchaseOrderForm({
                 size="icon"
                 disabled={tickPending || customerSaved || isCustomerSaved || (!receiverName.trim() && !customerCompany.trim())}
                 onClick={handleSaveCustomer}
-                title={tt("receiverSaved")}
+                title={customerSaved ? tt("receiverSaved") : tt("receiverSaveHint")}
               >
                 {customerSaved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
               </Button>
@@ -727,7 +738,7 @@ export function PurchaseOrderForm({
                             size="icon"
                             disabled={tickPending || !l.product_name.trim() || saved}
                             onClick={() => handleSaveProduct(idx)}
-                            title={tt("productSaved")}
+                            title={saved ? tt("productSaved") : tt("productSaveHint")}
                           >
                             {saved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
                           </Button>

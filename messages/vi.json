@@ -35,6 +35,7 @@
     "ledger": "Bảng tính tiền",
     "suppliers": "Nhà cung cấp",
     "customers": "Khách hàng",
+    "buyers": "Người mua",
     "users": "Người dùng",
     "settings": "Cài đặt",
     "navAria": "Menu điều hướng",
@@ -106,6 +107,7 @@
     "code": "Mã đơn",
     "poCode": "Mã PO",
     "orderCode": "Mã đơn đặt",
+    "orderCodeHint": "Số thứ tự trong cùng một dự án — các đơn chung dự án dùng chung tiền tố, chỉ số cuối tăng dần, không phải mã bị trùng lặp.",
     "supplierCompany": "Tên công ty NCC",
     "supplierContact": "Người phụ trách NCC",
     "supplierPhone": "SĐT NCC",
@@ -250,6 +252,16 @@
     "receiverPhone": "SĐT người nhận",
     "emptyDescription": "Thêm khách hàng đầu tiên để bắt đầu."
   },
+  "buyers": {
+    "title": "Người mua",
+    "add": "Thêm người mua",
+    "empty": "Chưa có người mua nào",
+    "subtitle": "Danh bạ người mua — dùng lại khi tạo đơn đặt hàng",
+    "name": "Tên người mua",
+    "phone": "SĐT",
+    "dialogDescription": "Thông tin sẽ dùng khi tạo đơn đặt hàng.",
+    "emptyHint": "Thêm người mua đầu tiên để bắt đầu."
+  },
   "users": {
     "title": "Quản lý người dùng",
     "create": "Tạo người dùng",
@@ -290,9 +302,13 @@
     "created": "Đã tạo",
     "deleted": "Đã xoá",
     "supplierSaved": "Đã lưu NCC vào danh bạ",
+    "supplierSaveHint": "Lưu NCC này vào danh bạ",
     "buyerSaved": "Đã lưu người mua vào danh bạ",
+    "buyerSaveHint": "Lưu người mua này vào danh bạ",
     "receiverSaved": "Đã cập nhật thông tin nhận",
+    "receiverSaveHint": "Lưu thông tin khách hàng này vào danh bạ",
     "productSaved": "Đã lưu sản phẩm vào danh mục",
+    "productSaveHint": "Lưu sản phẩm này vào danh mục",
     "roleChanged": "Đã đổi vai trò",
     "passwordReset": "Đã đặt lại mật khẩu",
     "userCreated": "Đã tạo người dùng"
@@ -324,14 +340,16 @@
     "minString": "Phải có ít nhất {min} ký tự",
     "invalidEnum": "Giá trị không hợp lệ",
     "invalidEmail": "Email không hợp lệ",
-    "companyName": "Nhập tên công ty"
+    "companyName": "Nhập tên công ty",
+    "buyerName": "Nhập tên người mua"
   },
   "confirm": {
     "deleteOrder": "Xoá đơn đặt hàng này? Hành động không thể hoàn tác.",
     "deleteDn": "Xoá phiếu giao hàng này?",
-    "duplicate": "Sao chép thành đơn nháp mới?",
+    "duplicate": "Sao chép thành đơn nháp mới? Đơn mới sẽ có mã đơn riêng và tiếp tục số thứ tự PO trong cùng dự án.",
     "deleteCustomer": "Xoá khách hàng \"{name}\"?",
     "deleteSupplier": "Xoá NCC \"{name}\"?",
+    "deleteBuyer": "Xoá người mua \"{name}\"?",
     "changeRole": "Chuyển vai trò người dùng này thành \"{role}\"?",
     "promptNewPassword": "Nhập mật khẩu mới (ít nhất 6 ký tự):",
     "confirmResetPassword": "Xác nhận đặt lại mật khẩu cho người dùng này?"

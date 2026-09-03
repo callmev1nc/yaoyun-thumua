@@ -22,6 +22,7 @@ export async function createBuyer(input: {
     created_by: ctx.user.id,
   }).select("id").single();
   if (error) return { error: error.message };
+  revalidatePath("/buyers");
   revalidatePath("/purchase-orders/new");
   return { ok: true, id: data.id };
 }
@@ -44,7 +45,7 @@ export async function updateBuyer(
     })
     .eq("id", id);
   if (error) return { error: error.message };
-  revalidatePath("/purchase-orders/new");
+  revalidatePath("/buyers");
   return { ok: true };
 }
 
@@ -55,6 +56,6 @@ export async function deleteBuyer(id: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("buyers").delete().eq("id", id);
   if (error) return { error: error.message };
-  revalidatePath("/purchase-orders/new");
+  revalidatePath("/buyers");
   return { ok: true };
 }

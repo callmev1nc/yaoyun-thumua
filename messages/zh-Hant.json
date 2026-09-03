@@ -35,6 +35,7 @@
     "ledger": "結算表",
     "suppliers": "供應商",
     "customers": "客戶",
+    "buyers": "採購人",
     "users": "使用者",
     "settings": "設定",
     "navAria": "導覽選單",
@@ -106,6 +107,7 @@
     "code": "單號",
     "poCode": "PO 號",
     "orderCode": "訂單號",
+    "orderCodeHint": "同一專案內的流水號，同專案訂單共用相同前綴、末碼依序遞增，並非重複的舊編號。",
     "supplierCompany": "供應商公司名稱",
     "supplierContact": "供應商負責人",
     "supplierPhone": "供應商電話",
@@ -250,6 +252,16 @@
     "receiverPhone": "收貨人電話",
     "emptyDescription": "新增第一個客戶以開始。"
   },
+  "buyers": {
+    "title": "採購人",
+    "add": "新增採購人",
+    "empty": "尚無採購人",
+    "subtitle": "採購人通訊錄 — 建立採購單時可重複使用",
+    "name": "採購人姓名",
+    "phone": "電話",
+    "dialogDescription": "此資訊將於建立採購單時使用。",
+    "emptyHint": "新增第一個採購人以開始。"
+  },
   "users": {
     "title": "使用者管理",
     "create": "建立使用者",
@@ -290,9 +302,13 @@
     "created": "已建立",
     "deleted": "已刪除",
     "supplierSaved": "已將供應商加入通訊錄",
+    "supplierSaveHint": "將此供應商加入通訊錄",
     "buyerSaved": "已將採購人加入通訊錄",
+    "buyerSaveHint": "將此採購人加入通訊錄",
     "receiverSaved": "已更新收貨資訊",
+    "receiverSaveHint": "將此客戶資訊加入通訊錄",
     "productSaved": "已將產品加入品項清單",
+    "productSaveHint": "將此產品加入品項清單",
     "roleChanged": "已變更角色",
     "passwordReset": "已重設密碼",
     "userCreated": "已建立使用者"
@@ -324,14 +340,16 @@
     "minString": "至少 {min} 個字元",
     "invalidEnum": "無效的值",
     "invalidEmail": "電子郵件格式不正確",
-    "companyName": "請輸入公司名稱"
+    "companyName": "請輸入公司名稱",
+    "buyerName": "請輸入採購人姓名"
   },
   "confirm": {
     "deleteOrder": "刪除此採購單？此操作無法復原。",
     "deleteDn": "刪除此交貨單？",
-    "duplicate": "複製為新的草稿單？",
+    "duplicate": "複製為新的草稿單？新單將取得專屬訂單號，並沿用同一專案的 PO 序號。",
     "deleteCustomer": "刪除客戶「{name}」？",
     "deleteSupplier": "刪除供應商「{name}」？",
+    "deleteBuyer": "刪除採購人「{name}」？",
     "changeRole": "將此使用者的角色變更為「{role}」？",
     "promptNewPassword": "請輸入新密碼（至少 6 個字元）：",
     "confirmResetPassword": "確認重設此使用者的密碼？"

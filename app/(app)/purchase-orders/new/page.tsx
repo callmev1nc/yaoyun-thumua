@@ -20,7 +20,6 @@ export default async function NewPurchaseOrderPage() {
       buyers={(buyers as Buyer[]) ?? []}
       products={(products as Product[]) ?? []}
       currentUserName={ctx?.profile?.full_name ?? ""}
-      initialDefaults={ctx?.profile ?? undefined}
     />
   );
 }
