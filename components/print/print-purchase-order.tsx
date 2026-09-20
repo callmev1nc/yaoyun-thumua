@@ -21,7 +21,7 @@ export function PrintPurchaseOrder({
   locale: Locale;
 }) {
   const rates = Array.from(new Set(items.map((i) => i.vat_rate)));
-  const vatRate = rates[0] ?? 8;
+  const vatLabel = rates.length === 1 ? String(rates[0] ?? 8) : rates.join("/");
   const payText =
     payments.length > 0
       ? payments
@@ -118,7 +118,7 @@ export function PrintPurchaseOrder({
               <td className="pp-tot-val">{money(order.subtotal_ex_vat)}</td>
             </tr>
             <tr>
-              <td className="pp-tot-label">{tCn("totalVat", { rate: vatRate })}</td>
+              <td className="pp-tot-label">{tCn("totalVat", { rate: vatLabel })}</td>
               <td className="pp-tot-val">{money(order.vat_total)}</td>
             </tr>
             <tr>

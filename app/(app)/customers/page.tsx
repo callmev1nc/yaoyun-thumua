@@ -1,13 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { getTranslations, getLocale } from "next-intl/server";
-import type { Locale } from "@/i18n/request";
+import { getTranslations } from "next-intl/server";
 import { CustomersManager } from "@/components/customers-manager";
 import type { Customer } from "@/types/db";
 
 export default async function CustomersPage() {
   const supabase = await createClient();
   const t = await getTranslations("customers");
-  const locale = await getLocale() as Locale;
   const { data } = await supabase
     .from("customers")
     .select("id, company_name, address, contact_name, phone, receiver_name, receiver_phone")

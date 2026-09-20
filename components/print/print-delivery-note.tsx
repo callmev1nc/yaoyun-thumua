@@ -54,6 +54,8 @@ export function PrintDeliveryNote({
           </div>
           <div className="pp-info2-right">
             <Inline label={`${tCn("info.orderCode")} ${tVn("info.orderCode")}`} value={orderCode ?? ""} />
+            {projectCode ? <Inline label={`${tCn("info.projectCode")} ${tVn("info.projectCode")}`} value={projectCode} /> : null}
+            {poCode ? <Inline label={`${tCn("info.poCode")} ${tVn("info.poCode")}`} value={poCode} /> : null}
             <Inline label={`${tCn("info.phone")} ${tVn("info.phone")}`} value={note.responsible_phone ?? ""} />
             <Inline label={`${tCn("info.phone")} ${tVn("info.phone")}`} value={note.receiver_phone ?? ""} />
           </div>

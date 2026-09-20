@@ -3,7 +3,6 @@
 import { useTranslations, useLocale } from "next-intl";
 import type { Locale } from "@/i18n/request";
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Pencil } from "lucide-react";
 import type { PurchaseOrder, OrderItem, DeliveryNote, DeliveryItem } from "@/types/db";
@@ -50,12 +49,10 @@ export function DeliveryNoteForm({
   initialNote?: DeliveryNote;
   initialItems?: DeliveryItem[];
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const t = useTranslations("delivery");
   const tc = useTranslations("common");
-  const tt = useTranslations("toasts");
   const te = useTranslations("errors");
   const to = useTranslations("orders");
   const locale = useLocale() as Locale;

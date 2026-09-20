@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import type { DeliveryStatus } from "@/types/db";
 import { updateDeliverySchema } from "@/lib/validation";
 
 export interface DeliveryItemInput {

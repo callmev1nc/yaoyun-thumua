@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 export function DeleteDeliveryButton({ id }: { id: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const t = useTranslations("common");
   const tc = useTranslations("confirm");
 
   function handleDelete() {

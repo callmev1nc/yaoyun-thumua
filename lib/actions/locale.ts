@@ -2,7 +2,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { locales, type Locale } from "@/i18n/request";
+import { locales } from "@/i18n/request";
 
 export async function setLocale(locale: string) {
   if (!(locales as readonly string[]).includes(locale)) return;

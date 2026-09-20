@@ -31,17 +31,18 @@ export default async function DashboardPage() {
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString();
   const sevenDaysLater = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7).toISOString().slice(0, 10);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const empty: any = { data: null, count: 0 };
-  let orderCountRes: any = empty;
-  let ledgerRes: any = empty;
-  let dnRes: any = empty;
-  let needPayRes: any = empty;
-  let recentOrdersRes: any = empty;
-  let paySummaryRes: any = empty;
-  let spendBySupplierRes: any = empty;
-  let spend6moRes: any = empty;
-  let upcomingDeliveriesRes: any = empty;
+  // Supabase query results — typed as data+count, defaults to empty
+  type QueryRes = { data: unknown; count?: number | null };
+  const empty: QueryRes = { data: null, count: 0 };
+  let orderCountRes: QueryRes = empty;
+  let ledgerRes: QueryRes = empty;
+  let dnRes: QueryRes = empty;
+  let needPayRes: QueryRes = empty;
+  let recentOrdersRes: QueryRes = empty;
+  let paySummaryRes: QueryRes = empty;
+  let spendBySupplierRes: QueryRes = empty;
+  let spend6moRes: QueryRes = empty;
+  let upcomingDeliveriesRes: QueryRes = empty;
   try {
     const supabase = await createClient();
     [orderCountRes, ledgerRes, dnRes, needPayRes, recentOrdersRes, paySummaryRes, spendBySupplierRes, spend6moRes, upcomingDeliveriesRes] = await Promise.all([
@@ -95,11 +96,11 @@ export default async function DashboardPage() {
 
   const monthOrders = orderCountRes.count ?? 0;
   const monthDeliveries = dnRes.count ?? 0;
-  const totalNeedPay = (ledgerRes.data ?? []).reduce(
+  const totalNeedPay = ((ledgerRes.data as Array<{ grand_total: number }> | null) ?? []).reduce(
     (s: number, r: { grand_total: number }) => s + Number(r.grand_total),
     0,
   );
-  const totalPaid = (paySummaryRes.data ?? []).reduce(
+  const totalPaid = ((paySummaryRes.data as Array<{ amount: number }> | null) ?? []).reduce(
     (s: number, r: { amount: number }) => s + Number(r.amount),
     0,
   );
